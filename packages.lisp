@@ -14,6 +14,6 @@
 	#:ht-ajax 	
 	#:postmodern
 	#:yason)
-  (:export ))
+  (:export #:admin))
 
 (in-package #:sacraspot)

@@ -12,6 +12,32 @@
 
 ;(defun parse-mailing-address (address)
   ;(all-matches ".*([0-9][0-9][0-9][0-9][0-9]-?[0-9]?[0-9]?[0-9]?[0-9]?)$" address))
+
+(defmacro with-gensyms (symbols &body body)
+  `(let ,(mapcar #'(lambda (symbol)
+		     `(,symbol (gensym)))
+		 symbols)
+     ,@body))
+
+(defmacro defcached (name params &body body)
+  (with-gensyms (table value found)
+    `(let ((,table (make-hash-table :test #'equal)))
+       (defun ,name ,params
+	 (multiple-value-bind (,value ,found)
+	     (gethash (list ,@params) ,table)
+	   (if ,found
+	       ,value
+	       (setf (gethash (list ,@params) ,table)
+		     (progn ,@body))))))))
+
+(defun group (list n)
+  (cond ((null list)
+	 nil)
+	((<= (list-length list) n)
+	 (list list))
+	(t
+	 (cons (subseq list 0 n)
+	       (group (subseq list n) n)))))
   
 (defmacro aif (condition &body body)
   `(let ((it ,condition))
@@ -20,6 +46,47 @@
 (defmacro awhile (condition &body body)
   `(do ((it ,condition ,condition)) 
        ((not it)) ,@body))
+
+(defmacro arc-if (&body forms)
+  `(cond ,@(mapcar #'(lambda (clause)
+		       (if (= (list-length clause) 2)
+			   clause
+			   (cons 't clause)))
+		   (group forms 2))))
+
+(defun get-range (begin end)
+  (if (<= begin end)
+      (cons begin (get-range (1+ begin) end))))
+
+(defmacro range (begin &optional end)
+  (arc-if (and (listp begin)
+	       (null end))
+	  `(apply #'get-range ,begin)
+	  (and (integerp begin)
+	       (integerp end))
+	  `(list ,@(get-range begin end))
+	  `(funcall #'get-range ,begin ,end)))
+
+(defun make-set (list &optional (eql-test #'=) (predicate #'<))
+  (labels ((filter-dups (lst)
+	     (arc-if (null lst)
+		     nil
+		     (equal (list-length lst) 1)
+		     lst
+		     (funcall eql-test (first lst) (second lst))
+		     (filter-dups (rest lst))
+		     (cons (first lst) (filter-dups (rest lst))))))
+    (filter-dups (sort list predicate))))
+
+(defun parse-number-span (span)
+  (make-set
+   (mapcan #'(lambda (part)
+	       (arc-if (cl-ppcre:scan "[0-9]+-[0-9]+" part)
+		       (get-range (mapcar #'read-from-string
+				      (split-sequence:split-sequence #\- part)))
+		       (cl-ppcre:scan "[0-9]+" part)
+		       (list (read-from-string part))))
+	   (split-sequence:split-sequence #\, span :remove-empty-subseqs t))))
 
 (defun clean-phone (number)
   (with-output-to-string (out)
@@ -52,11 +119,20 @@
 		 ("UT" . "Utah") ("VT" . "Vermont") ("VA" . "Virginia") ("WA" . "Washington")
 		 ("WV" . "West Virginia") ("WI" . "Wisconsin") ("WY" . "Wyoming")))
 
+(defvar months '(("Jan" . "January")("Feb" . "February")("Mar" . "March")
+		 ("Apr" . "April")("May" . "May") ("Jun" . "June")
+		 ("Jul" . "July")("Aug" . "August") ("Sep" . "September")
+		 ("Oct" . "October")("Nov" . "November") ("Dec" . "December")))
+
+(defvar dows '(("Mon" . "Monday") ("Tue" . "Tuesday") ("Wed" . "Wednesday") ("Thu" . "Thursday")
+	       ("Fri" . "Friday") ("Sat" . "Saturday") ("Sun" . "Sunday")))
+		 
+
 (define-easy-handler (admin :uri "/admin" :default-request-type :post) ()
   (with-connection *connection-spec*
     (if (parameter "action")            ;if request came from admin page form
 					;dispatch on action type
-	(cond ((equal (parameter "action") "add") 
+	(cond ((equal (parameter "action") "add-parish") 
 	       (query (:insert-into 'parishes :set 
 				    'fullname (parameter "parish-long-name")
 				    'shortname (parameter "parish-short-name")
@@ -71,7 +147,7 @@
 				    'email (parameter "parish-email")
 				    'website (parameter "parish-website")
 				    'diocese (parameter "parish-diocese"))))
-	      ((equal (parameter "action") "delete")
+	      ((equal (parameter "action") "delete-parish")
 	       (execute (:delete-from 'parishes :where (:= 'parish_id (parameter "parish")))))))
     (let ((parishes (query (:select '* :from 'parishes) :alists)))
       (with-html-output-to-string (*standard-output* nil :prologue t :indent t)
@@ -80,7 +156,7 @@
 	  (:title "admin"))
 	 (:body
 	  (:form :id "add-parish" :action "admin" :method "post"
-	   (:input :type "hidden" :name "action" :value "add")
+	   (:input :type "hidden" :name "action" :value "add-parish")
 	   (:input :type "text" :name "parish-long-name" "parish-long-name")(:br)
 	   (:input :type "text" :name "parish-short-name" "parish-short-name")(:br)
 	   (:select :name "parish-country" (:option :value "US" "United States")) (:br)
@@ -112,9 +188,30 @@
 					   (rest parish))))) 
 			   (:br)
 			   (:form :id "delete-parish" :action "admin" :method "post"
-			    (:input :type "hidden" :name "action" :value "delete")
+			    (:input :type "hidden" :name "action" :value "delete-parish")
 			    (:input :type "hidden" :name "parish" :value (cdar parish)
 			    (:input :type "submit" :value "delete")))
 			   (:br))))
 		  parishes)))))))
+
+
+(with-html-output-to-string (*standard-output* nil :prologue t :indent t)
+  (:form :id "add-schedule" :action "admin" :method "post"
+   (:input :type "hidden" :name "action" :value "add-schedule")
+   (:input :type "text" :name "parish" "Parish")(:br)
+   (:select :name "sacrament-type" "Sacrament Kind"
+	    (:option :value "mass" "Mass")
+	    (:option :value "confession" "Confession"))(:br)
+   (:input :type "text" :name "start-time" "Start Time")(:br)
+   (:input :type "text" :name "end-time" "End Time")(:br)
+   (:input :type "text" :name "years" "Years")(:br)
+   (mapcar #'(lambda (month)
+	       (htm (:input :type "checkbox"
+			    :name (cdr month))))
+	   months)"Months"(:br)
+   (:input :type "text" :name "days" "Days of the Month")(:br)
+   (mapcar #'(lambda (dow)
+	       (htm (:input :type "checkbox"
+			    :name (cdr dow))))
+	   dows)"Days of the Week"(:br)))
 
