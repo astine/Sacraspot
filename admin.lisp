@@ -148,41 +148,75 @@
 				    'website (parameter "parish-website")
 				    'diocese (parameter "parish-diocese"))))
 	      ((equal (parameter "action") "delete-parish")
-	       (execute (:delete-from 'parishes :where (:= 'parish_id (parameter "parish")))))))
+	       (execute (:delete-from 'parishes :where (:= 'parish_id (parameter "parish")))))
+	      ;((equal (parameter "action") "add-schedule")
+	       ;((execute (:insert-into 'schedules :set
+				       ;'parish_id (parameter "parish")
+				       ;'sacrament_type (parameter "sacrament-type")
+				       ;'start_time (parameter "start-time")
+				       ;'end_time (parameter "end-time")))
+		;(execute (:insert-into 'schedule_year_map :set
+				       )
     (let ((parishes (query (:select '* :from 'parishes) :alists)))
       (with-html-output-to-string (*standard-output* nil :prologue t :indent t)
 	(:html
 	 (:head 
 	  (:title "admin"))
 	 (:body
-	  (:form :id "add-parish" :action "admin" :method "post"
-	   (:input :type "hidden" :name "action" :value "add-parish")
-	   (:input :type "text" :name "parish-long-name" "parish-long-name")(:br)
-	   (:input :type "text" :name "parish-short-name" "parish-short-name")(:br)
-	   (:select :name "parish-country" (:option :value "US" "United States")) (:br)
-	   (:select :name "parish-state" 
-		    (mapcar #'(lambda (state) 
-				(htm (:option :value (car state) 
-					      (str (cdr state)))))
-			    states)) (:br)
-	   (:input :type "text" :name "parish-county" "parish-county")(:br)
-	   (:input :type "text" :name "parish-city" "parish-city")(:br)
-	   (:input :type "text" :name "parish-street" "parish-street")(:br)
-	   (:input :type "text" :name "parish-street-number" "parish-street-number")(:br)
-	   (:input :type "text" :name "parish-zip" "parish-zip")(:br)
-	   (:input :type "text" :name "parish-phone" "parish-phone")(:br)
-	   (:input :type "text" :name "parish-email" "parish-email")(:br)
-	   (:input :type "text" :name "parish-website" "parish-website")(:br)
-	   (:input :type "text" :name "parish-diocese" "parish-diocese")(:br)
-	   (:input :type "submit" :value "submit"))
+	  (:div :style "float:left"
+	   (:form :id "add-parish" :action "admin" :method "post" :style "float:left"
+	    (:input :type "hidden" :name "action" :value "add-parish")
+	    (:input :type "text" :name "parish-long-name" "parish-long-name")(:br)
+	    (:input :type "text" :name "parish-short-name" "parish-short-name")(:br)
+	    (:select :name "parish-country" (:option :value "US" "United States")) (:br)
+	    (:select :name "parish-state" 
+		     (mapcar #'(lambda (state) 
+				 (htm (:option :value (car state) 
+					       (str (cdr state)))))
+			     states)) (:br)
+	    (:input :type "text" :name "parish-county" "parish-county")(:br)
+	    (:input :type "text" :name "parish-city" "parish-city")(:br)
+	    (:input :type "text" :name "parish-street" "parish-street")(:br)
+	    (:input :type "text" :name "parish-street-number" "parish-street-number")(:br)
+	    (:input :type "text" :name "parish-zip" "parish-zip")(:br)
+	    (:input :type "text" :name "parish-phone" "parish-phone")(:br)
+	    (:input :type "text" :name "parish-email" "parish-email")(:br)
+	    (:input :type "text" :name "parish-website" "parish-website")(:br)
+	    (:input :type "text" :name "parish-diocese" "parish-diocese")(:br)
+	    (:input :type "submit" :value "submit"))
+	   (:form :id "add-schedule" :action "admin" :method "post" :style "float:left"
+            (:input :type "hidden" :name "action" :value "add-schedule")
+	    (:input :type "text" :name "parish" "Parish")(:br)
+	    (:select :name "sacrament-type" "Sacrament Kind"
+		     (:option :value "mass" "Mass")
+		     (:option :value "confession" "Confession"))(:br)
+            (:input :type "text" :name "start-time" "Start Time")(:br)
+	    (:input :type "text" :name "end-time" "End Time")(:br)
+	    (:input :type "text" :name "years" "Years")(:br)
+	    (:fieldset (:legend "Months")
+	     (mapcar #'(lambda (month)
+		         (htm (:input :type "checkbox"
+				      :name (car month)
+				      (str (cdr month)))(:br)))
+		     months))(:br)
+            (:input :type "text" :name "days" "Days of the Month")(:br)
+	    (:fieldset (:legend "Days of the Week")
+	     (mapcar #'(lambda (dow)
+		         (htm (:input :type "checkbox"
+				      :name (car dow)
+				      (str (cdr dow)))(:br)))
+		     dows))(:br)
+	    (:input :type "submit" :value "submit")))
+	  (:div :style "clear:left"
 	  (mapcar #'(lambda (parish)
 		      (htm (:div :style "float:left;"
 			    (:table
 			     (fmt "~{<tr><td>~A</td><td>~A</td></tr>~}" 
 				  (alist-to-plist 
 				   (mapcar #'(lambda (pair)
-					       (if (equal (symbol-name (first pair))
-							  "PHONE")
+					       (if (and (equal (symbol-name (first pair))
+							       "PHONE")
+							(not (equal (cdr pair) "")))
 						   (cons (car pair) (pretty-print-phone (cdr pair)))
 						   pair))
 					   (rest parish))))) 
@@ -192,7 +226,7 @@
 			    (:input :type "hidden" :name "parish" :value (cdar parish)
 			    (:input :type "submit" :value "delete")))
 			   (:br))))
-		  parishes)))))))
+		  parishes))))))))
 
 
 (with-html-output-to-string (*standard-output* nil :prologue t :indent t)
