@@ -52,7 +52,7 @@
 		       (if (= (list-length clause) 2)
 			   clause
 			   (cons 't clause)))
-		   (group forms 2))))
+		   (sacraspot::group forms 2))))
 
 (defun get-range (begin end)
   (if (<= begin end)
@@ -82,11 +82,27 @@
   (make-set
    (mapcan #'(lambda (part)
 	       (arc-if (cl-ppcre:scan "[0-9]+-[0-9]+" part)
-		       (get-range (mapcar #'read-from-string
+		       (range (mapcar #'read-from-string
 				      (split-sequence:split-sequence #\- part)))
 		       (cl-ppcre:scan "[0-9]+" part)
 		       (list (read-from-string part))))
 	   (split-sequence:split-sequence #\, span :remove-empty-subseqs t))))
+
+(defun make-number-span (number-list)
+  (labels ((scan-list (nums curr acc)
+	     (arc-if (null nums)
+		     (cons curr acc)
+		     (null curr)
+		     (scan-list (rest nums) (cons (first nums) curr) acc)
+		     (= (first nums) (1+ (first curr)))
+		     (scan-list (rest nums) (cons (first nums) curr) acc)
+		     (scan-list nums nil (cons curr acc)))))
+    (reduce #'(lambda (x y) (concatenate 'string y ", " x))
+	    (mapcar #'(lambda (sublist) (if (= (list-length sublist) 1)
+					    (format nil "~A" (car sublist))
+					    (format nil "~A-~A" (car (last sublist)) 
+						    (first sublist)))) 
+		    (scan-list number-list nil nil)))))
 
 (defun clean-phone (number)
   (with-output-to-string (out)
@@ -127,36 +143,121 @@
 (defvar dows '(("Mon" . "Monday") ("Tue" . "Tuesday") ("Wed" . "Wednesday") ("Thu" . "Thursday")
 	       ("Fri" . "Friday") ("Sat" . "Saturday") ("Sun" . "Sunday")))
 		 
+(defun add-parish-query (fullname shortname country state county city street
+			 street-number zip phone email website diocese)
+  (sql (:insert-into 'parishes :set
+			 'fullname fullname
+			 'shortname shortname
+			 'country country
+			 'state state
+			 'county county
+			 'city city
+			 'street street
+			 'street_number street-number
+			 'zip zip
+			 'phone (clean-phone phone)
+			 'email email
+			 'website website
+			 'diocese diocese)))
 
+(defun add-schedule-queries (parish sacrament-type start-time end-time
+			   years months doms dows)
+  (append (list (sql (:insert-into 'schedules :set
+				   'parish_id parish
+				   'sacrament_type (string-capitalize sacrament-type)
+				   'start_time start-time
+				   'end_time end-time)))
+	  (mapcar #'(lambda (year) (sql (:insert-into 'schedule_year_map
+						      :set 'year year)))
+		  years)
+	  (mapcar #'(lambda (month) (sql (:insert-into 'schedule_month_map
+						      :set 'month (string-capitalize month))))
+		  months)
+	  (mapcar #'(lambda (dom) (sql (:insert-into 'schedule_dom_map
+						      :set 'day_of_month dom)))
+		  doms)
+	  (mapcar #'(lambda (dow) (sql (:insert-into 'schedule_dow_map
+						      :set 'day_of_week (string-downcase dow))))
+		  dows)))
+
+(defmacro call-with (function parameters lambda-list)
+  `(lambda ,parameters (funcall ,function ,@lambda-list)))
+
+(defun handle-admin-action (action)
+  (arc-if (equal action "add-parish") 
+	  (query (add-parish-query
+		  (parameter "parish-long-name")
+		  (parameter "parish-short-name")
+		  (parameter "parish-country")
+		  (parameter "parish-state")
+		  (parameter "parish-county")
+		  (parameter "parish-city")
+		  (parameter "parish-street")
+		  (parameter "parish-street-number")
+		  (parameter "parish-zip")
+		  (parameter "parish-phone")
+		  (parameter "parish-email")
+		  (parameter "parish-website")
+		  (parameter "parish-diocese")))
+	  (equal action "delete-parish")
+	  (execute (:delete-from 'parishes :where (:= 'parish_id (parameter "parish"))))
+	  (equal action "add-schedule")
+	  (mapcar (call-with #'cl-postgres:exec-query (query) (*database* query))
+		  (add-schedule-queries (parameter "parish")
+					(parameter "sacrament-type")
+					(parameter "start-time")
+					(parameter "end-time")
+					(parse-number-span (parameter "years"))
+					(loop for month in months
+					   when (parameter (car month))
+					   collect (car month))
+					(parse-number-span (parameter "days"))
+					(loop for dow in dows
+					   when (parameter (car dow))
+					   collect (car dow))))
+	  (equal action "delete-schedule")
+	  (execute (:delete-from 'schedules :where (:= 'schedule_id (parameter "schedule"))))))
+
+(defun parish-schedule-html (parish-id)
+  (with-html-output-to-string (*standard-output* nil :indent t :prologue nil)
+    (:table
+     (dolist (schedule (query (:select 'schedule_id 'sacrament_type 'start_time 'end_time 
+				       :from 'schedules
+				       :where (:= 'parish_id parish-id))))
+       (destructuring-bind (schedule-id sacrament-type start-time end-time) 
+	   schedule
+	 (htm (:tr (:td "Schedule") (:td (str schedule-id)))
+	      (:tr (:td "Type") (:td (str sacrament-type)))
+	      (:tr (:td "Time") (:td (str (format nil "~A-~A" start-time end-time))))
+	      (aif (query (:select 'year :from 'schedule_year_map
+				   :where (:= 'schedule_id schedule-id)) :column)
+		(htm (:tr (:td "Years") (:td (str (reduce #'(lambda (x y)
+							      (concatenate 'string x ", " y))
+							  it))))))
+	      (aif (query (:select 'month :from 'schedule_month_map
+				   :where (:= 'schedule_id schedule-id)) :column)
+		(htm (:tr (:td "Months") (:td (str (reduce #'(lambda (x y)
+							       (concatenate 'string x ", " y))
+							   it))))))
+	      (aif (query (:select 'day_of_month :from 'schedule_dom_map
+				   :where (:= 'schedule_id schedule-id)) :column)
+		(htm (:tr (:td "Days of the Month") (:td (str (make-number-span it))))))
+	      (aif (query (:select 'day_of_week :from 'schedule_dow_map
+				   :where (:= 'schedule_id schedule-id)) :column)
+		(htm (:tr (:td "Days of the Week") (:td (str (reduce #'(lambda (x y)
+									 (concatenate 'string x ", " y))
+								     it))))))
+	      (:tr (:td
+		    (:form :id "delete-schedule" :action "admin" :method "post"
+			   (:input :type "hidden" :name "action" :value "delete-schedule")
+			   (:input :type "hidden" :name "schedule" :value schedule-id)
+			   (:input :type "submit" :value "Delete Schedule"))))))))))
+  
 (define-easy-handler (admin :uri "/admin" :default-request-type :post) ()
   (with-connection *connection-spec*
-    (if (parameter "action")            ;if request came from admin page form
+    (aif (parameter "action")            ;if request came from admin page form
 					;dispatch on action type
-	(cond ((equal (parameter "action") "add-parish") 
-	       (query (:insert-into 'parishes :set 
-				    'fullname (parameter "parish-long-name")
-				    'shortname (parameter "parish-short-name")
-				    'country (parameter "parish-country")
-				    'state (parameter "parish-state")
-				    'county (parameter "parish-county")
-				    'city (parameter "parish-city")
-				    'street (parameter "parish-street")
-				    'street_number (parameter "parish-street-number")
-				    'zip (parameter "parish-zip")
-				    'phone (clean-phone (parameter "parish-phone"))
-				    'email (parameter "parish-email")
-				    'website (parameter "parish-website")
-				    'diocese (parameter "parish-diocese"))))
-	      ((equal (parameter "action") "delete-parish")
-	       (execute (:delete-from 'parishes :where (:= 'parish_id (parameter "parish")))))
-	      ;((equal (parameter "action") "add-schedule")
-	       ;((execute (:insert-into 'schedules :set
-				       ;'parish_id (parameter "parish")
-				       ;'sacrament_type (parameter "sacrament-type")
-				       ;'start_time (parameter "start-time")
-				       ;'end_time (parameter "end-time")))
-		;(execute (:insert-into 'schedule_year_map :set
-				       )
+      (handle-admin-action it))
     (let ((parishes (query (:select '* :from 'parishes) :alists)))
       (with-html-output-to-string (*standard-output* nil :prologue t :indent t)
 	(:html
@@ -186,7 +287,7 @@
 	    (:input :type "submit" :value "submit"))
 	   (:form :id "add-schedule" :action "admin" :method "post" :style "float:left"
             (:input :type "hidden" :name "action" :value "add-schedule")
-	    (:input :type "text" :name "parish" "Parish")(:br)
+	    (:input :type "text" :name "parish" "Parish-ID")(:br)
 	    (:select :name "sacrament-type" "Sacrament Kind"
 		     (:option :value "mass" "Mass")
 		     (:option :value "confession" "Confession"))(:br)
@@ -219,33 +320,12 @@
 							(not (equal (cdr pair) "")))
 						   (cons (car pair) (pretty-print-phone (cdr pair)))
 						   pair))
-					   (rest parish))))) 
+					   parish)))) 
 			   (:br)
+			   (str (parish-schedule-html (cdar parish)))
 			   (:form :id "delete-parish" :action "admin" :method "post"
 			    (:input :type "hidden" :name "action" :value "delete-parish")
-			    (:input :type "hidden" :name "parish" :value (cdar parish)
-			    (:input :type "submit" :value "delete")))
+			    (:input :type "hidden" :name "parish" :value (cdar parish))
+			    (:input :type "submit" :value "delete"))
 			   (:br))))
 		  parishes))))))))
-
-
-(with-html-output-to-string (*standard-output* nil :prologue t :indent t)
-  (:form :id "add-schedule" :action "admin" :method "post"
-   (:input :type "hidden" :name "action" :value "add-schedule")
-   (:input :type "text" :name "parish" "Parish")(:br)
-   (:select :name "sacrament-type" "Sacrament Kind"
-	    (:option :value "mass" "Mass")
-	    (:option :value "confession" "Confession"))(:br)
-   (:input :type "text" :name "start-time" "Start Time")(:br)
-   (:input :type "text" :name "end-time" "End Time")(:br)
-   (:input :type "text" :name "years" "Years")(:br)
-   (mapcar #'(lambda (month)
-	       (htm (:input :type "checkbox"
-			    :name (cdr month))))
-	   months)"Months"(:br)
-   (:input :type "text" :name "days" "Days of the Month")(:br)
-   (mapcar #'(lambda (dow)
-	       (htm (:input :type "checkbox"
-			    :name (cdr dow))))
-	   dows)"Days of the Week"(:br)))
-
