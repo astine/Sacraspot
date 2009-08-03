@@ -10,6 +10,7 @@
 	#:hunchentoot 	
 ;	#:drakma
 	#:cl-who 	
+	#:local-time
 	#:js 	
 	#:ht-ajax 	
 	#:postmodern
