@@ -11,6 +11,7 @@
 	       :drakma
                :parenscript
 	       :trivial-shell
+               :local-time
 	       :cl-who
                :cl-ppcre
 	       :fiveam
