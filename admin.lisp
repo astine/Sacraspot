@@ -166,7 +166,7 @@
   ;validate info
   (unless (or (null email)
 	      (equal "" email)
-	      (scan "[a-bA-B0-9_.-]+@[a-nA-B0-9_.-]+[.].+" email))
+	      (scan "[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.-]+[.].+" email))
     (error "Bad email address being added to parish table"))
   (unless (= (length (clean-phone phone)) 10)
     (error "Bad phone number being added to parish table"))
@@ -242,6 +242,10 @@
 	  (equal action "delete-schedule")
 	  (execute (:delete-from 'schedules :where (:= 'schedule_id (parameter "schedule"))))))
 
+(defun format-time-of-day (time)
+  (format-timestring nil time
+		     :format '(:hour12 ":" (:min 2) " " :ampm)))
+
 (defun parish-schedule-html (parish-id &optional style)
   "Generates html to display out a parishes schedules"
   (with-html-output-to-string (*standard-output* nil :indent t :prologue nil)
@@ -253,7 +257,9 @@
 	   schedule
 	 (htm (:tr (:td "Schedule") (:td (str schedule-id)))
 	      (:tr (:td "Type") (:td (str sacrament-type)))
-	      (:tr (:td "Time") (:td (str (format nil "~A-~A" start-time end-time))))
+	      (:tr (:td "Time") (:td (str (format nil "~A - ~A" 
+						  (format-time-of-day start-time)
+						  (format-time-of-day end-time)))))
 	      (aif (query (:select 'year :from 'schedule_year_map
 				   :where (:= 'schedule_id schedule-id)) :column)
 		(htm (:tr (:td "Years") (:td (str (reduce #'(lambda (x y)
