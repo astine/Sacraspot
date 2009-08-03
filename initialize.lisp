@@ -48,6 +48,11 @@
 				:js-file-uris (namestring 
 					       (merge-pathnames *js-dir* "/prototype.js"))))
 
+;;timezone
+
+(setf *default-timezone* +utc-zone+)
+(set-local-time-cl-postgres-readers)
+
 ;(with-input-from-string (stream "9300 Stonewall Road
 ;Manassas, VA 20110-2594")
 	     ;(let ((st-add nil)
