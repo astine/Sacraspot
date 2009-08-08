@@ -55,15 +55,16 @@
 		 (setf (gethash (list ,@params) ,table)
 		       (progn ,@body)))))))))
 
-(defun group (list n)
-  "Partitions a list into a list of sublists of length 'n'"
-  (cond ((null list)
-	 nil)
-	((<= (list-length list) n)
-	 (list list))
-	(t
-	 (cons (subseq list 0 n)
-	       (group (subseq list n) n)))))
+(eval-when (:compile-toplevel)
+  (defun group (list n)
+    "Partitions a list into a list of sublists of length 'n'"
+    (cond ((null list)
+	   nil)
+	  ((<= (list-length list) n)
+	   (list list))
+	  (t
+	   (cons (subseq list 0 n)
+		 (group (subseq list n) n))))))
   
 (defmacro aif (condition &body body)
   "anaphoric if"
@@ -190,20 +191,21 @@
 		     years months doms dows)
   "Adds a schedule entry to the 'schedules table as well as entries to the 
    subordinate year, month, day-of-month, and day of week tables"
-  (execute (:insert-into 'schedules :set
-			 'parish_id parish
-			 'sacrament_type (string-capitalize sacrament-type)
-			 'start_time start-time
-			 'end_time end-time
-			 'details details))
-  (dolist (year years)
-    (execute (:insert-into 'schedule_year_map :set 'year year)))
-  (dolist (month months)
-    (execute (:insert-into 'schedule_month_map :set 'month (string-capitalize month))))
-  (dolist (dom doms)
-    (execute (:insert-into 'schedule_dom_map :set 'day_of_month dom)))
-  (dolist (dow dows)
-    (execute (:insert-into 'schedule_dow_map :set 'day_of_week (string-downcase dow)))))
+  (with-transaction ()
+    (execute (:insert-into 'schedules :set
+			   'parish_id parish
+			   'sacrament_type (string-capitalize sacrament-type)
+			   'start_time start-time
+			   'end_time end-time
+			   'details details))
+    (dolist (year years)
+      (execute (:insert-into 'schedule_year_map :set 'year year)))
+    (dolist (month months)
+      (execute (:insert-into 'schedule_month_map :set 'month (string-capitalize month))))
+    (dolist (dom doms)
+      (execute (:insert-into 'schedule_dom_map :set 'day_of_month dom)))
+    (dolist (dow dows)
+      (execute (:insert-into 'schedule_dow_map :set 'day_of_week (string-downcase dow))))))
 
 (defun handle-admin-action (action)
   "When a form is submited on the admin page, this function is called
@@ -250,10 +252,10 @@
   "Generates html to display out a parishes schedules"
   (with-html-output-to-string (*standard-output* nil :indent t :prologue nil)
     (:table :style style
-     (dolist (schedule (query (:select 'schedule_id 'sacrament_type 'start_time 'end_time 
+     (dolist (schedule (query (:select 'schedule_id 'sacrament_type 'start_time 'end_time 'details
 				       :from 'schedules
 				       :where (:= 'parish_id parish-id))))
-       (destructuring-bind (schedule-id sacrament-type start-time end-time) 
+       (destructuring-bind (schedule-id sacrament-type start-time end-time details) 
 	   schedule
 	 (htm (:tr (:td "Schedule") (:td (str schedule-id)))
 	      (:tr (:td "Type") (:td (str sacrament-type)))
@@ -278,6 +280,8 @@
 		(htm (:tr (:td "Days of the Week") (:td (str (reduce #'(lambda (x y)
 									 (concatenate 'string x ", " y))
 								     it))))))
+	      (unless (or (null details) (equal details :NULL) (equal details ""))
+		  (htm (:tr (:td "Details") (:td (str details)))))
 	      (:tr (:td
 		    (:form :id "delete-schedule" :action "admin" :method "post"
 			   (:input :type "hidden" :name "action" :value "delete-schedule")
@@ -334,6 +338,25 @@
 			       (str (cdr dow)))(:br)))
 	      dows))(:br)
      (:input :type "submit" :value "submit"))))
+
+(defun format-hr-timestamp (time)
+  (format-timestring nil time
+		     :format '(:short-month " " :day ", " :year " ":hour12 ":" (:min 2) " " :ampm)))
+
+(defun current-events-html (&optional style cell-style)
+  (with-html-output-to-string (*standard-output* nil :indent t :prologue nil)
+    (:table :style style
+     (doquery (:order-by
+	       (:select 'fullname 'city 'state 'sacrament_type 'time 
+			:from 'events
+			:inner-join 'parishes :on (:= 'events.parish_id 'parishes.parish_id)
+			:inner-join 'schedules :on (:= 'events.schedule_id 'schedules.schedule_id))
+	       'time)
+	 (fullname city state kind time)
+       (htm (:tr :style cell-style 
+	     (:td :style cell-style (str kind))
+	     (:td :style cell-style (str (format nil "~A in ~A, ~A" fullname city state)))
+	     (:td :style cell-style (str (format-hr-timestamp time)))))))))
   
 (define-easy-handler (admin :uri "/admin" :default-request-type :post) ()
   "The administration page. This page is to allow adminstrators to view the contents of the
@@ -350,10 +373,12 @@
 	 (:body
 	  (:div :style "float:left"
 	   (str (add-parish-html "float:left"))
-	   (str (add-schedule-html "float:left")))
+	   (str (add-schedule-html "float:left"))
+	   (str (current-events-html "float:left;border:1px solid #111;border-collapse:collapse" 
+				     "border:1px solid #111")))
 	  (:div :style "clear:left"
 	  (mapcar #'(lambda (parish)
-		      (htm (:div :style "float:left;"
+		      (htm (:div :style "float:left;border:1px solid #111"
 			    (:table
 			     (fmt "~{<tr><td>~A</td><td>~A</td></tr>~}" 
 				  (alist-to-plist 
