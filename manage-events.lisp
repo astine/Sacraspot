@@ -15,7 +15,7 @@
 	(eval `(setq ,(first setting) ,(rest setting)))))))
 
 ;;load all of the settings
-(reload-settings "settings.sexp")
+(reload-settings "sacraspot/settings.sexp")
 
 ;; database
 (defvar *connection-spec* `(,*db-name* ,*db-user* ,*db-passwd* ,*db-host* :pooled-p t))
@@ -63,6 +63,6 @@
 	 (update-events (now)))))
 
 (with-open-file (log "/var/log/sacraspot" :direction :output :if-exists :append)
-  (format log "~A:~T~A" "manage-events" (second *posix-argv*)))
+  (format log "~A:~T~A" "manage-events~%" (second *posix-argv*)))
 
 (quit)
