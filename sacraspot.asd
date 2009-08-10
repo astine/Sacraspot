@@ -5,9 +5,13 @@
   :version "0.0.1"
   :serial t
   :components ((:file "packages")
+	       (:file "utilities")
+	       (:file "ip-geolocation")
+	       (:file "frontpage")
                (:file "initialize")
                (:file "admin"))
-  :depends-on (:hunchentoot
+  :depends-on (:asdf-system-connections
+	       :hunchentoot
 	       :drakma
                :parenscript
 	       :trivial-shell
