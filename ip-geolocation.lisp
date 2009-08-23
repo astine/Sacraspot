@@ -2,6 +2,8 @@
 
 (in-package #:sacraspot)
 
+(defvar *geolocus-db-changed* nil)
+
 (defun normalize-ip (ip-address)
   (multiple-value-bind (whole-match fields)
       (scan-to-strings "([0-9]*)\.([0-9]*)\.([0-9]*)\.([0-9]*)" ip-address)
@@ -12,7 +14,8 @@
        (* (read-from-string (elt fields 2)) 256)
        (read-from-string (elt fields 3)))))
 
-(defun get-locale (ip-address)
+(defcached get-locale (:flag *geolocus-db-changed* :flag-auto-unset t)
+    (ip-address)
   (let ((ip-num (normalize-ip ip-address)))
     (alist-to-plist
      (query (:select 'country 'region 'city 'postalcode 'latitude 'longitude 'metrocode 'areacode

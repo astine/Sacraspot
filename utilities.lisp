@@ -13,23 +13,23 @@
 		 symbols)
      ,@body))
 
-(defmacro defcached (name lambda-list &body body)
-  "Defines a function with a cache that dispatches on its argument list."
-  (with-gensyms (table value found)
-    (let ((params (loop for param in lambda-list
-		       when (not (or (eql param '&optional)
-				     (eql param '&keys)
-				     (eql param '&rest)
-				     (eql param '&body)))
-		       collect (if (listp param) (car param) param))))
-      `(let ((,table (make-hash-table :test #'equal)))
-	 (defun ,name ,lambda-list
-	   (multiple-value-bind (,value ,found)
-	       (gethash (list ,@params) ,table)
-	     (if ,found
-		 ,value
-		 (setf (gethash (list ,@params) ,table)
-		       (progn ,@body)))))))))
+;(defmacro defcached (name lambda-list &body body)
+  ;"Defines a function with a cache that dispatches on its argument list."
+  ;(with-gensyms (table value found)
+    ;(let ((params (loop for param in lambda-list
+		       ;when (not (or (eql param '&optional)
+				     ;(eql param '&keys)
+				     ;(eql param '&rest)
+				     ;(eql param '&body)))
+		       ;collect (if (listp param) (car param) param))))
+      ;`(let ((,table (make-hash-table :test #'equal)))
+	 ;(defun ,name ,lambda-list
+	   ;(multiple-value-bind (,value ,found)
+	       ;(gethash (list ,@params) ,table)
+	     ;(if ,found
+		 ;,value
+		 ;(setf (gethash (list ,@params) ,table)
+		       ;(progn ,@body)))))))))
 
 (eval-when (:compile-toplevel :load-toplevel)
   (defun group (list n)

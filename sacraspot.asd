@@ -6,6 +6,7 @@
   :serial t
   :components ((:file "packages")
 	       (:file "utilities")
+	       (:file "caching")
 	       (:file "ip-geolocation")
 	       (:file "frontpage")
                (:file "initialize")
