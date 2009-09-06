@@ -10,7 +10,8 @@
 	       (:file "ip-geolocation")
 	       (:file "frontpage")
                (:file "initialize")
-               (:file "admin"))
+               (:file "admin")
+               (:file "bulk"))
   :depends-on (:asdf-system-connections
 	       :hunchentoot
 	       :drakma

@@ -202,7 +202,7 @@
 			   (:input :type "hidden" :name "schedule" :value schedule-id)
 			   (:input :type "submit" :value "Delete Schedule"))))))))))
 
-(defcached add-parish-html (&optional style)
+(defcached add-parish-html () (&optional style)
   (with-html-output-to-string (*standard-output* nil :indent t :prologue nil)
     (:form :id "add-parish" :action "admin" :method "post" :style style 
      (:input :type "hidden" :name "action" :value "add-parish")
@@ -226,7 +226,7 @@
      (:input :type "text" :name "parish-longitude" "parish-longitude")(:br)
      (:input :type "submit" :value "submit"))))
 
-(defcached add-schedule-html (&optional style)
+(defcached add-schedule-html () (&optional style)
   (with-html-output-to-string (*standard-output* nil :indent t :prologue nil)
     (:form :id "add-schedule" :action "admin" :method "post" :style style 
      (:input :type "hidden" :name "action" :value "add-schedule")

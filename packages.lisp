@@ -8,6 +8,7 @@
 	#:cl-user 	
 	#:cl-ppcre 	
 	#:hunchentoot 	
+	#:parenscript
 ;	#:drakma
 	#:cl-who 	
 	#:local-time

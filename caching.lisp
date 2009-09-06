@@ -1,6 +1,6 @@
 ;;; website caching.lisp - Andrew Stine (C) 2009
 
-(in-package 'sacraspot)
+(in-package #:sacraspot)
 
 (defmacro cached-lambda ((lambda-list &key timeout flag flag-auto-unset frequency no-dispatch-params ) 
 			 &body body)
@@ -38,8 +38,9 @@
 		       (progn 
 			 ,(if timeout
 			      `(setf time (get-internal-real-time)))
-			 ,(if flag-auto-unset 
-			      `(setf ,flag nil))
+			 ,@(when flag-auto-unset 
+				 `((if ,flag (clrhash ,table))
+				   (setf ,flag nil)))
 			 ,(if frequency
 			      `(setf counter 0))
 			 ,@body)))))))))
