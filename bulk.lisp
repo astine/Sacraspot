@@ -1,4 +1,4 @@
-(in-package #:sacrapspot)
+(in-package #:sacraspot)
 
 ;;convenience macros for inserting javascript in page headers
 (defmacro ps-script (&body forms)
@@ -86,7 +86,21 @@
     (dolist (entry (mapcar #'(lambda (line)
 			       (split-sequence #\, line))
 			   (split-sequence #\newline it)))
-      (execute (
+      (execute (add-parish (first entry)
+			   (second entry)
+			   (third entry)
+			   (fourth entry)
+			   (fifth entry)
+			   (sixth entry)
+			   (seventh entry)
+			   (eighth entry)
+			   (ninth entry)
+			   (tenth entry)
+			   (nth 11 entry)
+			   (nth 12 entry)
+			   (nth 13 entry)
+			   (nth 14 entry)))))
+			   
   (with-html-output-to-string (*standard-output* nil :prologue t :indent t)
     (:html
      (:head
