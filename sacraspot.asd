@@ -2,12 +2,13 @@
 
 (asdf:defsystem :sacraspot
   :description "sacraspot"
-  :version "0.0.1"
+  :version "0.1.1"
   :serial t
   :components ((:file "packages")
 	       (:file "utilities")
 	       (:file "caching")
 	       (:file "ip-geolocation")
+	       (:file "query-sacraments")
 	       (:file "frontpage")
                (:file "initialize")
                (:file "admin")
