@@ -88,3 +88,11 @@
 (defmacro call-with (function parameters lambda-list)
   `(lambda ,parameters (funcall ,function ,@lambda-list)))
 
+
+(defun get-parameters (parameter-name &optional default (parser #'read-from-string))
+  (aif (parameter parameter-name)
+    (if parser
+	(funcall parser it)
+	it)
+    default))
+		       
