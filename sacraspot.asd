@@ -8,9 +8,9 @@
 	       (:file "utilities")
 	       (:file "caching")
 	       (:file "ip-geolocation")
+               (:file "initialize")
 	       (:file "query-sacraments")
 	       (:file "frontpage")
-               (:file "initialize")
                (:file "admin")
                (:file "bulk"))
   :depends-on (:asdf-system-connections
