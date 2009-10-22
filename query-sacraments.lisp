@@ -65,5 +65,8 @@
       (let* ((lat-long (latitude-and-longitude ip))
 	     (latitude (fetch-parameter "latitude" (first lat-long)))
 	     (longitude (fetch-parameter "longitude" (second lat-long))))
-	(query-sacraments time distance future maxresults sacraments latitude longitude))))))
+	(query-sacraments time distance future maxresults sacraments latitude longitude)))))
+
+
+
   
