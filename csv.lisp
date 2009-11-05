@@ -1,4 +1,8 @@
+;;; website csv.lisp - Andrew Stine (C) 2009
+
 (defun parse-csv-stream (csv-stream)
+  "parses a csv stream into a list of lists, each sublist
+   corresponding to a row in the csv stream"
   (let ((out-rows nil)
 	(row nil)
 	(cell (make-string-output-stream))
@@ -25,6 +29,7 @@
       (nreverse out-rows))))
   
 (defun parse-csv (csv)
+  "like 'parse-csv-stream' but accepts a string as input"
   (if (stringp csv)
       (parse-csv-stream (make-string-input-stream csv))
       (parse-csv-stream csv)))
