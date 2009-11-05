@@ -7,6 +7,7 @@
   :components ((:file "packages")
 	       (:file "utilities")
 	       (:file "caching")
+	       (:file "csv")
 	       (:file "ip-geolocation")
                (:file "initialize")
 	       (:file "query-sacraments")
