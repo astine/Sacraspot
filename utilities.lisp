@@ -90,9 +90,58 @@
 
 
 (defun fetch-parameter (parameter-name &optional default (parser #'read-from-string))
+  "A function to encapsulate some of the routine details of dealing with http
+   parameters in hunchentoot handlers."
   (aif (parameter parameter-name)
     (if parser
-	(funcall parser it)
-	it)
+	(funcall parser parameter-name)
+	parameter-name)
     default))
 		       
+(defun parse-number-span (span)
+  "Take a string of the form '1-3, 5, 8-10', and returns an order
+   list of  every number, represented by the string"
+  (make-set
+   (mapcan #'(lambda (part)
+	       (cond ((cl-ppcre:scan "[0-9]+-[0-9]+" part)
+		      (range (mapcar #'read-from-string
+				     (split-sequence:split-sequence #\- part))))
+		     ((cl-ppcre:scan "[0-9]+" part)
+		      (list (read-from-string part)))))
+	   (split-sequence:split-sequence #\, span :remove-empty-subseqs t))))
+
+(defun make-number-span (number-list)
+  "Takes a list of numbers and returns a string of the form:
+   '1-3, 5, 8-10', representing the numbers in the list"
+  (labels ((scan-list (nums curr acc)
+	     (cond ((null nums)
+		    (cons curr acc))
+		   ((null curr)
+		    (scan-list (rest nums) (cons (first nums) curr) acc))
+		   ((= (first nums) (1+ (first curr)))
+		    (scan-list (rest nums) (cons (first nums) curr) acc))
+		   (t (scan-list nums nil (cons curr acc))))))
+    (reduce #'(lambda (x y) (concatenate 'string y ", " x))
+	    (mapcar #'(lambda (sublist) (if (= (list-length sublist) 1)
+					    (format nil "~A" (car sublist))
+					    (format nil "~A-~A" (car (last sublist)) 
+						    (first sublist)))) 
+		    (scan-list (make-set number-list) nil nil)))))
+
+(defun clean-phone (number)
+  "Reduces a phone number to a string of numerals"
+  (with-output-to-string (out)
+    (with-input-from-string (in number)
+      (awhile (read-char in nil nil)
+	(if (and (> (char-code it) 47) 
+		 (< (char-code it) 58))
+	    (princ it out))))))
+					   
+(defun pretty-print-phone (number)
+  (concatenate 'string 
+	       "(" 
+	       (subseq number 0 3) 
+	       ") " 
+	       (subseq number 3 6) 
+	       "-" 
+	       (subseq number 6)))
