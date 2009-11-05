@@ -17,39 +17,51 @@
 ;longitude
 ;diocese
 
-(defmacro defselect (table-name &rest columns)
-  `(defun ,(intern (concatenate 'string "GET-" (symbol-name table-name))) ,columns
-     (doquery (sql-compile (list :select ,@(mapcar #'(lambda (column)
-						       `(quote ,column))
-						   columns) :from ,`(quote ,table-name) :where
-				 (list :or ,@(mapcar (lambda (column)
-						   (list 'if column (list 'list := `(quote ,column) 
-									  column)))
-						columns))))
-	 ,columns ,@(mapcar (lambda (column)
-			      `(print ,column))
-			    columns))))
+(defun select-parishes (fullname shortname
+			country state city street street-number zip
+			phone email website
+			latitude longitude diocese)
+  (macrolet ((make-objects (&body vars)
+	       `(yason:with-object ()
+		  ,@(mapcar (lambda (var)
+			      `(yason:encode-object-element (string (quote ,var)) ,var))
+			    vars)))
+	     (make-sqls (&body vars)
+	       `(list 'or ,@(mapcar (lambda (var)
+				      `(if ,var (list ':= ',var ,var)))
+				    vars))))
+    (yason:with-output-to-string* ()
+      (yason:with-array ()
+	(doquery (:select 'fullname 'shortname 'country 'state 'city
+			  'street 'street_number 'zip 'phone 'email
+			  'website 'latitude 'longitude 'diocese
+			  :from 'parishes :where
+			  (:raw (sql-compile
+				 `(:or
+				   ,(make-sqls fullname shortname country state
+					       city street zip email website
+					       latitude longitude diocese)
+				   ,(if street-number `(:= street_number ,street-number))
+				   ,(if phone `(:= phone ,(clean-phone phone)))))))
+	    (fullname shortname country state city street street-number zip phone email website latitude longitude diocese)
+	  (setf phone (pretty-print-phone phone))
+	  (setf latitude (write-to-string latitude))
+	  (setf longitude (write-to-string longitude))
+	  (make-objects fullname shortname country state city
+			street street-number zip phone email
+			website latitude longitude diocese))))))
 
-(defun get-parishes (fullname shortname diocese
-		     country state city street street-number zip
-		     phone email website
-		     latitude longitude)
-  (doquery (sql-compile `(:select fullname shortname country state city
-				  street street_number zip phone email
-				  website latitude longitude
-				  :from parishes :where
-				  (:or ,(if fullname `(:= fullname ,fullname))
-				       ,(if shortname `(:= shortname ,shortname))
-				       ,(if country `(:= country ,country))
-				       ,(if state `(:= state ,state))
-				       ,(if city `(:= city ,city))
-				       ,(if street `(:= street ,street))
-				       ,(if street-number `(:= street_number ,street-number))
-				       ,(if zip `(:= zip ,zip))
-				       ,(if phone `(:= phone ,(clean-phone phone)))
-				       ,(if email `(:= email ,email))
-				       ,(if website `(:= website ,website))
-				       ,(if latitude `(:= latitude ,latitude))
-				       ,(if longitude `(:= longitude ,longitude))
-				       ,(if diocese `(:= diocese ,diocese)))))
-      (fullname shortname country state city street street-number zip phone email website latitude longitude)
+(define-easy-handler (select-parishes* :uri "/select-parishes" :default-request-type :post) ()
+  (macrolet ((with-parameters ((&rest vars) &body body)
+	       `(let ,(mapcar (lambda (var)
+				`(,var (fetch-parameter (string ',var))))
+			      vars)
+		  ,@body)))
+    (with-connection *connection-spec*
+      (with-parameters (fullname shortname country state city street
+				 street-number zip email website
+				 latitude longitude diocese)
+	(select-parishes fullname shortname country state city
+			 street street-number zip phone email
+			 website latitude longitude diocese)))))
+
