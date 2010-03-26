@@ -1,5 +1,7 @@
 ;;; website insert-parishes.lisp - Andrew Stine (C) 2009
 
+(in-package #:sacraspot)
+
 (defun insert-parish (fullname shortname country state city street street-number 
 		      zip phone email website latitude longitude diocese)
   "Adds a parish entry with the provided fields into the 'parishes' table."

@@ -18,6 +18,8 @@
 ;;doms:           All the days of the month for the event;  a numberspan
 ;;dows:           All the days of the week for the event; a numberspan
 
+(in-package #:sacraspot)
+
 (defvar months '(("Jan" . "January")("Feb" . "February")("Mar" . "March")
 		 ("Apr" . "April")("May" . "May") ("Jun" . "June")
 		 ("Jul" . "July")("Aug" . "August") ("Sep" . "September")
