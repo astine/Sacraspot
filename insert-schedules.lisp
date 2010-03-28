@@ -18,6 +18,8 @@
 ;;doms:           All the days of the month for the event;  a numberspan
 ;;dows:           All the days of the week for the event; a numberspan
 
+(in-package #:sacraspot)
+
 (defvar months '(("Jan" . "January")("Feb" . "February")("Mar" . "March")
 		 ("Apr" . "April")("May" . "May") ("Jun" . "June")
 		 ("Jul" . "July")("Aug" . "August") ("Sep" . "September")
@@ -65,6 +67,7 @@
       (execute (:insert-into 'schedule_dom_map :set 'day_of_month dom)))
     (dolist (dow (numbers-to-dows dows))
       (execute (:insert-into 'schedule_dow_map :set 'day_of_week (string-downcase dow))))))
+
 
 (define-easy-handler (insert-schedules :uri "/insert-schedules" :default-request-type :post) ()
   (let ((schedules (fetch-parameter "schedules" nil #'parse-csv)))
