@@ -29,6 +29,7 @@
 ;; server
 
 (defvar *acceptor* (make-instance 'acceptor :port *port*))
+(defvar *test-acceptor* (make-instance 'acceptor :port 8079))
 ;(start *acceptor*)
 
 ;logs

@@ -68,6 +68,7 @@
     (dolist (dow (numbers-to-dows dows))
       (execute (:insert-into 'schedule_dow_map :set 'day_of_week (string-downcase dow))))))
 
+
 (define-easy-handler (insert-schedules :uri "/insert-schedules" :default-request-type :post) ()
   (let ((schedules (fetch-parameter "schedules" nil #'parse-csv)))
     (with-connection *connection-spec*
