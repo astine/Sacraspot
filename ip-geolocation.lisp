@@ -31,6 +31,3 @@
 	(list (getf locale :latitude)
 	      (getf locale :longitude))
 	(list 38.7705012 -77.4287641))))
-
-
-	       

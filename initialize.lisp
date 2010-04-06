@@ -20,7 +20,7 @@
 	(eval `(setq ,(first setting) ,(rest setting)))))))
 
 ;;load all of the settings
-(load-settings "settings.sexp")
+(load-settings "/home/illuminati/Programs/lisp/sacraspot/settings.sexp")
 
 ;; database
 
