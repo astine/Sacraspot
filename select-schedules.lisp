@@ -36,7 +36,7 @@
 				    ,(if month `(:= month ,month))
 				    ,(if year `(:= year ,year))))))
 		  'schedule_id)
-	(schedule-id parish-id sacrament-type start-time end-time details dom dow month year)
+	    (schedule-id parish-id sacrament-type start-time end-time details dom dow month year)
 	  (if (= schedule-id (first prev-row))
 	      (progn (pushnew dom (seventh prev-row))
 		     (pushnew dow (eighth prev-row))
@@ -54,7 +54,7 @@
 		       (yason:encode-object-element "year" (tenth prev-row)))
 		     (setf prev-row 
 			   (list (schedule-id parish-id sacrament-type start-time end-time details
-					      (to-list dom) (to-list dow) (to-list month) (to-list year))))
+					      (to-list dom) (to-list dow) (to-list month) (to-list year)))))))))))
 			   
 
 (defun parish-schedule-html (parish-id &optional style)
