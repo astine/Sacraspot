@@ -3,53 +3,59 @@
 (in-package #:sacraspot)
 
 ;;query elements:
-;fullname
-;shortname
-;country
-;state
-;street
-;street number
-;zip code
-;phone number
-;email
-;website
-;latitude
-;longitude
-;diocese
+;parish-id
+;sacrament-type
+;start-time
+;end-time
+;details
+;dom
+;dow
+;month
+;year
 
-(defun select-schedules (fullname shortname
-			country state city street street-number zip
-			phone email website
-			latitude longitude diocese)
-  (macrolet ((make-objects (&body vars)
-	       `(yason:with-object ()
-		  ,@(mapcar (lambda (var)
-			      `(yason:encode-object-element (string (quote ,var)) ,var))
-			    vars)))
-	     (make-sqls (&body vars)
-	       `(list 'or ,@(mapcar (lambda (var)
-				      `(if ,var (list ':= ',var ,var)))
-				    vars))))
+(defun to-list (item)
+  (and (coalesce item) (list item)))
+
+(defun select-schedules (parish-id sacrament-type start-time end-time details dom dow month year)
+  (let ((prev-row nil))
     (yason:with-output-to-string* ()
       (yason:with-array ()
-	(doquery (:select 'fullname 'shortname 'country 'state 'city
-			  'street 'street_number 'zip 'phone 'email
-			  'website 'latitude 'longitude 'diocese
-			  :from 'parishes :where
-			  (:raw (sql-compile
-				 `(:or
-				   ,(make-sqls fullname shortname country state
-					       city street zip email website
-					       latitude longitude diocese)
-				   ,(if street-number `(:= street_number ,street-number))
-				   ,(if phone `(:= phone ,(clean-phone phone)))))))
-	    (fullname shortname country state city street street-number zip phone email website latitude longitude diocese)
-	  (setf phone (pretty-print-phone phone))
-	  (setf latitude (write-to-string latitude))
-	  (setf longitude (write-to-string longitude))
-	  (make-objects fullname shortname country state city
-			street street-number zip phone email
-			website latitude longitude diocese))))))
+	(doquery (:order-by
+		  (:select 'schedule_id 'parish-id 'sacrament-type
+			   'start-time 'end-time 'details 'dom 'dow 'month 'year
+			   :from 'full_schedules :where 
+			   (:raw (sql-compile
+				  `(:or
+				    ,(if parish-id `(:= parish_id ,parish-id))
+				    ,(if sacrament-type `(:= sacrament_type ,sacrament-type))
+				    ,(if start-time `(:= start_time ,start-time))
+				    ,(if end-time `(:= end_time ,end-time))
+				    ,(if details `(:= details ,details))
+				    ,(if dom `(:= dom ,dom))
+				    ,(if dow `(:= dow ,dow))
+				    ,(if month `(:= month ,month))
+				    ,(if year `(:= year ,year))))))
+		  'schedule_id)
+	(schedule-id parish-id sacrament-type start-time end-time details dom dow month year)
+	  (if (= schedule-id (first prev-row))
+	      (progn (pushnew dom (seventh prev-row))
+		     (pushnew dow (eighth prev-row))
+		     (pushnew dow (ninth prev-row))
+		     (pushnew dow (tenth prev-row)))
+	      (progn (yason:with-object ()
+		       (yason:encode-object-element "parish-id" (second prev-row))
+		       (yason:encode-object-element "sacrament-type" (third prev-row))
+		       (yason:encode-object-element "start-time" (format-hr-timestamp (fourth prev-row)))
+		       (yason:encode-object-element "end-time" (format-hr-timestamp (fifth prev-row)))
+		       (yason:encode-object-element "details" (sixth prev-row))
+		       (yason:encode-object-element "dom" (seventh prev-row))
+		       (yason:encode-object-element "dow" (eighth prev-row))
+		       (yason:encode-object-element "month" (ninth prev-row))
+		       (yason:encode-object-element "year" (tenth prev-row)))
+		     (setf prev-row 
+			   (list (schedule-id parish-id sacrament-type start-time end-time details
+					      (to-list dom) (to-list dow) (to-list month) (to-list year))))
+			   
 
 (defun parish-schedule-html (parish-id &optional style)
   "Generates html to display out a parishes schedules"
@@ -83,7 +89,7 @@
 		(htm (:tr (:td "Days of the Week") (:td (str (reduce #'(lambda (x y)
 									 (concatenate 'string x ", " y))
 								     it))))))
-	      (unless (or (null details) (equal details :NULL) (equal details ""))
+	      (unless (or (null (coalesce details)) (equal details ""))
 		  (htm (:tr (:td "Details") (:td (str details)))))
 	      (:tr (:td
 		    (:form :id "delete-schedule" :action "admin" :method "post"
@@ -94,6 +100,5 @@
 (define-easy-handler (select-schedules* :uri "/select-schedules" :default-request-type :post) ()
   (with-connection *connection-spec*
     (apply #'select-parishes 
-	   (mapcar #'fetch-parameter '("fullname" "shortname" "country" "state" "city"
-				       "street" "street-number" "zip" "phone" "email"
-				       "website" "latitude" "longitude" "diocese")))))
+	   (mapcar #'fetch-parameter '("parish-id" "sacrament-type" "start-time" "end-time" "details"
+				       "dom" "dow" "month" "year")))))
