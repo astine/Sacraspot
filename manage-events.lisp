@@ -12,10 +12,10 @@
   (with-open-file (settings file-path)
     (while (listen settings)
       (let ((setting (read settings)))
-	(eval `(setq ,(first setting) ,(rest setting)))))))
+	(eval `(defparameter ,(first setting) ,(rest setting)))))))
 
 ;;load all of the settings
-(reload-settings "sacraspot/settings.sexp")
+(reload-settings "settings.sexp")
 
 ;; database
 (defvar *connection-spec* `(,*db-name* ,*db-user* ,*db-passwd* ,*db-host* :pooled-p t))
