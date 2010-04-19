@@ -40,20 +40,20 @@
 	    (schedule-id parish-id sacrament-type start-time end-time details dom dow month year)
 	  (if (equal schedule-id (first prev-row))
 	      (progn (if (coalesce dom) (pushnew dom (seventh prev-row)))
-		     (if (coalesce dow) (pushnew dow (eighth prev-row))
-		     (if (coalesce month) (pushnew month (ninth prev-row))
-		     (if (coalesce year) (pushnew year (tenth prev-row)))
+		     (if (coalesce dow) (pushnew dow (eighth prev-row)))
+		     (if (coalesce month) (pushnew month (ninth prev-row)))
+		     (if (coalesce year) (pushnew year (tenth prev-row))))
 	      (progn (if prev-row
 			 (yason:with-object ()
-			   (yason:encode-object-element "parish-id" (second prev-row))
-			   (yason:encode-object-element "sacrament-type" (third prev-row))
-			   (yason:encode-object-element "start-time" (format-hr-timestamp (fourth prev-row)))
-			   (yason:encode-object-element "end-time" (format-hr-timestamp (fifth prev-row)))
-			   (yason:encode-object-element "details" (sixth prev-row))
-			   (yason:encode-object-element "dom" (seventh prev-row))
-			   (yason:encode-object-element "dow" (eighth prev-row))
-			   (yason:encode-object-element "month" (ninth prev-row))
-			   (yason:encode-object-element "year" (tenth prev-row))))
+			   (yason:encode-object-element "PARISH-ID" (second prev-row))
+			   (yason:encode-object-element "SACRAMENT-TYPE" (third prev-row))
+			   (yason:encode-object-element "START-TIME" (format-hr-timestamp (fourth prev-row)))
+			   (yason:encode-object-element "END-TIME" (format-hr-timestamp (fifth prev-row)))
+			   (yason:encode-object-element "DETAILS" (sixth prev-row))
+			   (yason:encode-object-element "DOM" (seventh prev-row))
+			   (yason:encode-object-element "DOW" (eighth prev-row))
+			   (yason:encode-object-element "MONTH" (ninth prev-row))
+			   (yason:encode-object-element "YEAR" (tenth prev-row))))
 		     (setf prev-row 
 			   (mapcar #'coalesce
 				   (list schedule-id parish-id sacrament-type start-time end-time details
@@ -61,6 +61,6 @@
 
 (define-easy-handler (select-schedules* :uri "/select-schedules" :default-request-type :post) ()
   (with-connection *connection-spec*
-    (apply #'select-parishes 
+    (apply #'select-schedules 
 	   (mapcar #'fetch-parameter '("parish-id" "sacrament-type" "start-time" "end-time" "details"
 				       "dom" "dow" "month" "year")))))
