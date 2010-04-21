@@ -23,19 +23,23 @@
 	(doquery (:order-by
 		  (:select 'schedule_id 'parish-id 'sacrament-type
 			   'start-time 'end-time 'details 'day_of_month 'day_of_week 'month 'year
-			   :from 'full_schedules :where 
-			   (:raw (sql-compile
-				  `(:and
-				    ,(if parish-id `(:= parish_id ,parish-id) t)
-				    ,(if sacrament-type `(:= sacrament_type ,sacrament-type) t)
-				    ,(if start-time `(:= start_time ,start-time) t)
-				    ,(if end-time `(:= end_time ,end-time) t)
-				    ,(if details `(:= details ,details) t)
-				    ,(if dom `(:= day_of_month ,dom) t)
-				    ,(if dow `(:= day_of_week ,dow) t)
-				    ,(if month `(:= month ,month) t)
-				    ,(if year `(:= year ,year) t)
-				    ))))
+			   :from 'full_schedules :where
+			   (:in 'schedule_id
+				(:select 'schedule_id :from 'full_schedules :where
+					 (:raw (sql-compile
+						`(:and
+						  ,(if parish-id `(:= parish_id ,parish-id) t)
+						  ,(if sacrament-type (cons ':or (mapcar (lambda (s-t)
+											   `(:= sacrament_type ,s-t))
+											 sacrament-type))
+						       t)
+						  ,(if start-time `(:= start_time ,start-time) t)
+						  ,(if end-time `(:= end_time ,end-time) t)
+						  ,(if details `(:= details ,details) t)
+						  ,(if dom `(:= day_of_month ,dom) t)
+						  ,(if dow `(:= day_of_week ,dow) t)
+						  ,(if month `(:= month ,month) t)
+						  ,(if year `(:= year ,year) t) ))))))
 		  'schedule_id)
 	    (schedule-id parish-id sacrament-type start-time end-time details dom dow month year)
 	  (if (equal schedule-id (first prev-row))
@@ -62,5 +66,7 @@
 (define-easy-handler (select-schedules* :uri "/select-schedules" :default-request-type :post) ()
   (with-connection *connection-spec*
     (apply #'select-schedules 
-	   (mapcar #'fetch-parameter '("parish-id" "sacrament-type" "start-time" "end-time" "details"
-				       "dom" "dow" "month" "year")))))
+	   (cons (fetch-parameter "parish-id")
+		 (cons (fetch-parameter "sacrament-type" nil )
+		       (mapcar #'fetch-parameter '("start-time" "end-time" "details"
+						   "dom" "dow" "month" "year")))))))
