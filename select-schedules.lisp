@@ -43,10 +43,10 @@
 		  'schedule_id)
 	    (schedule-id parish-id sacrament-type start-time end-time details dom dow month year)
 	  (if (equal schedule-id (first prev-row))
-	      (progn (if (coalesce dom) (pushnew dom (seventh prev-row)))
-		     (if (coalesce dow) (pushnew dow (eighth prev-row)))
-		     (if (coalesce month) (pushnew month (ninth prev-row)))
-		     (if (coalesce year) (pushnew year (tenth prev-row))))
+	      (progn (if (coalesce dom) (pushnew dom (seventh prev-row) :test #'equal))
+		     (if (coalesce dow) (pushnew dow (eighth prev-row) :test #'equal))
+		     (if (coalesce month) (pushnew month (ninth prev-row) :test #'equal))
+		     (if (coalesce year) (pushnew year (tenth prev-row) :test #'equal)))
 	      (progn (if prev-row
 			 (yason:with-object ()
 			   (yason:encode-object-element "PARISH-ID" (second prev-row))
@@ -65,8 +65,15 @@
 
 (define-easy-handler (select-schedules* :uri "/select-schedules" :default-request-type :post) ()
   (with-connection *connection-spec*
-    (apply #'select-schedules 
-	   (cons (fetch-parameter "parish-id")
-		 (cons (fetch-parameter "sacrament-type" nil )
-		       (mapcar #'fetch-parameter '("start-time" "end-time" "details"
-						   "dom" "dow" "month" "year")))))))
+    (select-schedules (fetch-parameter "parish-id")
+		      (fetch-parameter "sacrament-type" nil
+				       (lambda (item)
+					 (mapcar #'string-capitalize
+						 (split-sequence:split-sequence #\, item))))
+		      (fetch-parameter "start-time")
+		      (fetch-parameter "end-time")
+		      (fetch-parameter "details")
+		      (fetch-parameter "dom")
+		      (fetch-parameter "dow" nil #'string-downcase)
+		      (fetch-parameter "month" nil #'string-downcase)
+		      (fetch-parameter "year"))))
