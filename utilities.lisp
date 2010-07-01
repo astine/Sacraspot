@@ -95,7 +95,7 @@
   (aif (parameter parameter-name)
     (if parser
 	(funcall parser parameter-name)
-	parameter-name)
+	it)
     default))
 		       
 (defun parse-number-span (span)
