@@ -44,8 +44,8 @@
   :group 'csv)
 
 (defface csv-bad-line-face
-  '((((class color) (background light)) (:forground "Orange" :underline t :bold nil))
-    (((class color) (background dark)) (:forground "Orange" :underline t :bold nil))
+  '((((class color) (background light)) (:foreground "Orange" :underline t :bold nil))
+    (((class color) (background dark)) (:foreground "Orange" :underline t :bold nil))
     (t (:underline t)))
   "Marks parts of lines in csv files that have errors but aren't errors themselves"
   :group 'csv)
@@ -97,6 +97,7 @@
   (unless (integerp (car (read-from-string field)))
     "Not a integer"))
 
+
 (defcustom *template* (list #'string-field-p #'integer-field-p)
   "Template against which a buffer is validated;
    This is a list of functions which return nil on success or an error
@@ -138,6 +139,7 @@
   "Validates csv row at point against *template*
    meant for interactive and incremental validation"
   (interactive)
+  (remove-overlays (line-beginning-position) (line-end-position))
   (unless (= (point) (point-max))
     (mapcar (lambda (err)
 	      (print-error (set-row err (1- (count-lines 1 (1+ (point))))))
@@ -151,4 +153,108 @@
   (for-rows (validate-csv-at-point)))
 
 
+;;; Emacs mode for csv file editing
 
+(defvar csv-validate-mode-map 
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c j") 'validate-csv-at-point)
+    (define-key map (kbd "C-c k") 'validate-csv-buffer)
+    map)
+  "Keymap for `csv-validate-mode'")
+
+(defvar csv-validate-mode-syntax-table
+  (let ((st (make-syntax-table)))
+    (modify-syntax-entry ?\\ "\\" st)
+    (modify-syntax-entry ?\" "$\"" st)
+    st)
+  "Syntax Table for `csv-validate-mode'")
+
+(defun paired-delimiter-at-point (&optional point)
+  (eq (car (syntax-after (or point (point)))) 8))
+
+(defun search-paired-delimiter (limit)
+  (catch 'return
+    (dotimes (x limit)
+      (if (and (paired-delimiter-at-point)
+	       (/= 10 (car (syntax-after (1- (point))))))
+	  (progn (set-match-data (list (point-marker) 
+				       (progn (forward-char) (point-marker))))
+		 (throw 'return t))
+	(forward-char)))))
+
+(defvar csv-validate-font-lock-keywords
+  '((search-paired-delimiter . font-lock-builtin-face))
+  "Keyword highlighting specification for `csv-validate-mode'.")
+
+;(defun csv-validate-font-lock-syntactic-face-function (state)
+  ;(cond ((and (nth 3 state)
+	      ;;(push (elt (thing-at-point 'char) 0) gfoo)
+	      ;(not (nth 5 state)))
+	 ;font-lock-comment-face)))
+	;(t font-lock-comment-face)))
+
+(define-derived-mode csv-validate-mode fundamental-mode "CSV Validate"
+  "A major mode for validating csv files."
+  :syntax-table csv-validate-mode-syntax-table
+  (set (make-local-variable 'font-lock-defaults)
+       '(csv-validate-font-lock-keywords))
+	 ;nil nil nil nil))
+	 ;(font-lock-syntactic-face-function
+	  ;. csv-validate-font-lock-syntactic-face-function)))
+  (set-syntax-table csv-validate-mode-syntax-table)
+  (use-local-map csv-validate-mode-map)
+					;(set (make-local-variable 'indent-line-function) 'csv-validate-indent-line)
+					;(set (make-local-variable 'imenu-generic-expression)
+					;csv-validate-imenu-generic-expression)
+					;(set (make-local-variable 'outline-regexp) csv-validate-outline-regexp)
+					;...)
+  )
+
+(provide 'csv-validate-mode)
+
+
+
+;; Sacraspot specific stuff
+
+(defun fullname-p (field)
+  (unless t "Bad Fullname"))
+(defun shortname-p (field)
+  (unless t "Bad Shortname"))
+(defun country-p (field)
+  (unless (equal field "US") "Only 'US' supported currently"))
+(defun state-p (field)
+  (unless (member field '("AL" "AK" "AS" "AZ" "AR" "CA" "CO" "CT" "DE" "DC" "FM" "FL" "GA"
+			  "GU" "HI" "ID" "IL" "IN" "IA" "KS" "KY" "LA" "ME" "MH" "MD" "MA"
+			  "MI" "MN" "MS" "MO" "MT" "NE" "NV" "NH" "NJ" "NM" "NY" "NC" "ND"
+			  "MP" "OH" "OK" "OR" "PW" "PA" "PR" "RI" "SC" "SD" "TN" "TX" "UT"
+			  "VT" "VI" "VA" "WA" "WV" "WI" "WY"))
+    "Must be standard two-letter state abbreviation"))
+(defun city-p (field)
+  (unless t "Bad city name"))
+(defun street-p (field)
+  (unless t "Bad street name"))
+(defun street-number-p (field)
+  (unless (integerp (car (read-from-string field)))
+    "Bad street number: not a number"))
+(defun zip-p (field)
+  (unless (integerp (car (read-from-string field)))
+    "Bad zip code: not a number"))
+(defun phone-p (field)
+  (unless t "Bad phone number"))
+(defun email-p (field)
+  (unless (or (equal "" field) (string-match ".*@.*\..*" field))
+    "Bad email address"))
+(defun website-p (field)
+  (unless t "Bad Website"))
+(defun coordinate-p (field)
+  (unless (floatp (car (read-from-string field)))
+    "Bad coordinates"))
+(defun diocese-p (field)
+  (unless t "Bad diocese name"))
+
+
+(defvar parish-template
+  (list #'fullname-p #'shortname-p #'country-p #'state-p #'city-p #'street-p #'street-number-p
+	#'zip-p #'phone-p #'email-p #'website-p #'coordinate-p #'coordinate-p #'diocese-p))
+
+; LocalWords:  CSV csv LocalWords Keymap
