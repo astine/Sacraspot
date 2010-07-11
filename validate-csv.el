@@ -36,6 +36,12 @@
 (defset set-field error-field)
 (defset set-message error-message)
 
+(defcustom field-seperator ?,
+  "")
+
+(defcustom field-delimiter ?\"
+ "")
+
 (defface csv-error-face
   '((((class color) (background light)) (:foreground "Red" :underline t :bold nil))
     (((class color) (background dark)) (:foreground "Red" :underline t :bold nil))
@@ -50,9 +56,13 @@
   "Marks parts of lines in csv files that have errors but aren't errors themselves"
   :group 'csv)
 
+(defun breakup-sequence ()
+  ""
+  (format "%c%c%c" field-delimiter field-seperator field-delimiter))
+
 (defun break-row-into-fields (row)
   "Breaks a row into its constituent fields with its quotes stripped off"
-  (split-string  (substring row 1 (1- (length row))) "\",\""))
+  (split-string  (substring row 1 (1- (length row))) (breakup-sequence)))
 
 (defun get-field-limits (field &optional row)
   "Returns the begin and end position in text of a field in its particular row"
@@ -110,7 +120,7 @@
 	      (funcall template field))
       (push (make-error :message it) errors))
 					;checking that '\' always preceeds '"' within a field
-    (let ((pos (position ?\" field)))
+    (let ((pos (position field-delimiter field)))
       (if (and pos
 	       (equal ?\\ (elt field (1- pos))))
 	  (push (make-error :message "Missing or misplaced quotation marks") errors)))
@@ -127,8 +137,8 @@
 	  (when (and template (not (= (list-length template) (list-length fields))))
 	    (push (make-error :message "Wrong number of fields") errors))
 					;The first and last characters must be '"'
-	  (unless (and (equal first-char ?\")
-		       (equal last-char ?\"))
+	  (unless (and (equal first-char field-delimiter)
+		       (equal last-char field-delimiter))
 	    (push (make-error :message "Missing or misplaced quotation marks") errors))
 	  (append errors (loop for count from 0 for field in fields for templ in template
 			       nconc (mapcar (lambda (er)
@@ -171,19 +181,20 @@
 
 (defun paired-delimiter-at-point (&optional point)
   (eq (car (syntax-after (or point (point)))) 8))
+(defun not-after-quote (&optional point)
+  (not (eq (car (syntax-after (1- (or point (point))))) 9)))
 
 (defun search-paired-delimiter (limit)
   (catch 'return
     (dotimes (x limit)
-      (if (and (paired-delimiter-at-point)
-	       (/= 10 (car (syntax-after (1- (point))))))
+      (if (and (paired-delimiter-at-point) (not-after-quote))
 	  (progn (set-match-data (list (point-marker) 
 				       (progn (forward-char) (point-marker))))
 		 (throw 'return t))
 	(forward-char)))))
 
 (defvar csv-validate-font-lock-keywords
-  '((search-paired-delimiter . font-lock-builtin-face))
+  '((search-paired-delimiter . font-lock-doc-face))
   "Keyword highlighting specification for `csv-validate-mode'.")
 
 ;(defun csv-validate-font-lock-syntactic-face-function (state)
