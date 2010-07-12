@@ -14,6 +14,7 @@
   (let ((home (gensym)))
     `(let ((,home (point)))
        (goto-char 1)
+       ,@body
        (while (zerop (forward-line))
 	 ,@body)
        (goto-char ,home))))
@@ -22,10 +23,10 @@
 
 (defun print-error (error)
   "Prints a quick description of an error"
-  (princ (format "Row: %i , Field: %i - %s\n"
-		 (1+ (or (error-row error) -1))
-		 (1+ (or (error-field error) -1))
-		 (error-message error))))
+  (format "Row: %i , Field: %i - %s"
+	   (1+ (or (error-row error) -1))
+	   (1+ (or (error-field error) -1))
+	   (error-message error))))
 
 (defmacro defset (name accessor)
   `(defun ,name (error new-value)
@@ -96,7 +97,8 @@
 	 (create-overlay (line-beginning-position) (line-end-position)
 			 :face 'csv-error-face
 			 :priority 1
-			 :help-echo (error-message error)))))
+			 :help-echo (error-message error))))
+  error)
 
 
 (defun string-field-p (field)
@@ -145,22 +147,30 @@
 					       (set-field er count))
 					     (validate-csv-field field templ))))))))
 
-(defun validate-csv-at-point () ;;FIXME - currently bombs if there is an error on the last row
+(defun validate-csv-at-point (&optional print-message) ;;FIXME - currently bombs if there is an error on the last row
   "Validates csv row at point against *template*
-   meant for interactive and incremental validation"
-  (interactive)
-  (remove-overlays (line-beginning-position) (line-end-position))
+   meant for interactive and incremental validation
+   returns error"
+  (interactive "p")
+  (when print-message
+    (remove-overlays (line-beginning-position) (line-end-position)))
   (unless (= (point) (point-max))
-    (mapcar (lambda (err)
-	      (print-error (set-row err (1- (count-lines 1 (1+ (point))))))
-	      (mark-error err))
-	    (validate-csv-row (chop (thing-at-point 'line)) *template*))))
+    (let ((errors (validate-csv-row (chop (thing-at-point 'line)) *template*))
+	  (current-line (1- (count-lines 1 (1+ (point))))))
+      (dolist (err errors)
+	(set-row err current-line)
+	(mark-error err))
+      (when print-message
+	(message (mapconcat #'print-error errors "\n")))
+      errors)))
 
 (defun validate-csv-buffer ()
   "Validates entire buffer against *template*"
   (interactive)
   (remove-overlays)
-  (for-rows (validate-csv-at-point)))
+  (let ((errors (list nil)))
+    (for-rows (nconc errors (validate-csv-at-point)))
+    (message (mapconcat #'print-error (rest errors) "\n"))))
 
 
 ;;; Emacs mode for csv file editing
@@ -185,6 +195,9 @@
   (not (eq (car (syntax-after (1- (or point (point))))) 9)))
 
 (defun search-paired-delimiter (limit)
+  "Searching function for font-lock-keywords;
+   Returns true is an unquoted paired delimiter is found
+   and sets the match data `match-data' to its location."
   (catch 'return
     (dotimes (x limit)
       (if (and (paired-delimiter-at-point) (not-after-quote))
@@ -194,7 +207,7 @@
 	(forward-char)))))
 
 (defvar csv-validate-font-lock-keywords
-  '((search-paired-delimiter . font-lock-doc-face))
+  '((search-paired-delimiter . font-lock-builtin-face))
   "Keyword highlighting specification for `csv-validate-mode'.")
 
 ;(defun csv-validate-font-lock-syntactic-face-function (state)
