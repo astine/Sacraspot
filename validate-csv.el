@@ -26,7 +26,15 @@
   (format "Row: %i , Field: %i - %s"
 	   (1+ (or (error-row error) -1))
 	   (1+ (or (error-field error) -1))
-	   (error-message error))))
+	   (error-message error)))
+
+(defun print-errors (errors)
+  "Prints a series of errors"
+  (mapconcat #'print-error errors "\n"))
+
+(defun message-errors (errors)
+  "Prints a series of errors"
+  (message (print-errors errors)))
 
 (defmacro defset (name accessor)
   `(defun ,name (error new-value)
@@ -161,24 +169,30 @@
 	(set-row err current-line)
 	(mark-error err))
       (when print-message
-	(message (mapconcat #'print-error errors "\n")))
+	(if errors
+	    (message-errors errors)
+	  (message (format "No errors for row %i." current-line))))
       errors)))
 
-(defun validate-csv-buffer ()
+(defun validate-csv-buffer (&optional print-message)
   "Validates entire buffer against *template*"
-  (interactive)
+  (interactive "p")
   (remove-overlays)
   (let ((errors (list nil)))
     (for-rows (nconc errors (validate-csv-at-point)))
-    (message (mapconcat #'print-error (rest errors) "\n"))))
+    (when print-message
+      (if (rest errors)
+	  (message-errors (rest errors))
+	(message "Validating buffer: No errors")))
+    (rest errors)))
 
 
 ;;; Emacs mode for csv file editing
 
 (defvar csv-validate-mode-map 
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c j") 'validate-csv-at-point)
-    (define-key map (kbd "C-c k") 'validate-csv-buffer)
+    (define-key map (kbd "C-c v") 'validate-csv-at-point)
+    (define-key map (kbd "C-c V") 'validate-csv-buffer)
     map)
   "Keymap for `csv-validate-mode'")
 
@@ -235,6 +249,3 @@
   )
 
 (provide 'csv-validate-mode)
-
-
-

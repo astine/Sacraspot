@@ -1,9 +1,5 @@
 (require 'http-post-simple)
 
-(defun foo ()
-  (interactive)
-  (message "foop"))
-
 (defun fullname-p (field)
   (unless t "Bad Fullname"))
 (defun shortname-p (field)
@@ -45,27 +41,51 @@
   (list #'fullname-p #'shortname-p #'country-p #'state-p #'city-p #'street-p #'street-number-p
 	#'zip-p #'phone-p #'email-p #'website-p #'coordinate-p #'coordinate-p #'diocese-p))
 
-; LocalWords:  CSV csv LocalWords Keymap
+(defvar schedule-template (list nil))
+
+(defvar parishes/schedules :parishes)
+
+(defun submit-parish ()
+  (aif (validate-csv-buffer)
+       (message (concat "Cannot submit parishes because of errors:\n"
+			(print-errors it)))
+       (http-post-simple "http://www.beggersandbuskers.com:8080/insert-parishes"
+			 `((parishes . ,(buffer-string))))))
+
+(defun submit-schedule ()
+  (aif (validate-csv-buffer)
+       (message (concat "Cannot submit parishes because of errors:\n"
+			(print-errors it)))
+       (http-post-simple "http://www.beggersandbuskers.com:8080/insert-schedules"
+			 `((schedules . ,(buffer-string))))))
+
+(defun submit ()
+  (interactive)
+  (message (case parishes/schedules
+	     (:parishes (submit-parish))
+	     (:schedules (submit-schedule)))))
+
+(defun toggle-parishes/schedules ()
+  (interactive)
+  (case parishes/schedules
+    (:parishes (setq parishes/schedules :schedules)
+	       (setq *template* schedule-template)
+	       (message "Switched from parishes to schedules"))
+    (:schedules (setq parishes/schedules :parishes)
+		(setq *template* parish-template)
+		(message "Switched from schedules to parishes"))))
+
+;(defun format-schedule ()
+  ;(interactive)
+  ;(thing-at-point 'line)
+
 (define-derived-mode sacraspot-mode csv-validate-mode "Sacraspot"
   "A major mode for working with sacraspot"
+  (setq *template* parish-template)
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map csv-validate-mode-map)
-    (define-key map (kbd "C-c l") 'foo)
+    (define-key map (kbd "C-c s") 'submit)
+    (define-key map (kbd "C-c t") 'toggle-parishes/schedules)
     (use-local-map map)))
 
 (provide 'sacraspot-mode)
-
-(defun submit-parish ()
-  (interactive)
-  (print (http-post-simple "http://www.beggersandbuskers.com:8080/insert-parishes"
-			   `((parishes . ,(buffer-string))))))
-
-(defun submit-schedule ()
-  (interactive)
-  (print (http-post-simple "http://www.beggersandbuskers.com:8080/insert-schedules"
-			   `((schedules . ,(buffer-string))))))
-
-
-(defun format-schedule ()
-  (interactive)
-  (thing-at-point 'line)
