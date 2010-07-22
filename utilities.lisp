@@ -138,10 +138,14 @@
 	    (princ it out))))))
 					   
 (defun pretty-print-phone (number)
-  (concatenate 'string 
-	       "(" 
-	       (subseq number 0 3) 
-	       ") " 
-	       (subseq number 3 6) 
-	       "-" 
-	       (subseq number 6)))
+  (if (equal number "")
+      ""
+      (handler-case
+	  (concatenate 'string 
+		       "(" 
+		       (subseq number 0 3) 
+		       ") " 
+		       (subseq number 3 6) 
+		       "-" 
+		       (subseq number 6))
+	(condition () (error "Problem pretty printing phone number: ~a" number)))))

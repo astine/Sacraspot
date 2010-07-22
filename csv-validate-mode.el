@@ -4,6 +4,11 @@
   `(let ((it ,condition))
      (if it ,on-true ,@on-false)))
 
+(defmacro aand (&rest args)
+  (cond ((null args) t)
+	((null (cdr args)) (car args))
+	(t `(aif ,(car args) (aand ,@(cdr args))))))
+
 (defun chop (string)
   "Removes last character from string"
   (substring string 0 (1- (length string))))
@@ -130,10 +135,9 @@
 	      (funcall template field))
       (push (make-error :message it) errors))
 					;checking that '\' always preceeds '"' within a field
-    (let ((pos (position field-delimiter field)))
-      (if (and pos
-	       (equal ?\\ (elt field (1- pos))))
-	  (push (make-error :message "Missing or misplaced quotation marks") errors)))
+    (if (aand (position field-delimiter field)
+	      (not (equal ?\\ (elt field (1- it)))))
+	(push (make-error :message (concat "Missing or misplaced quotation marks: " field)) errors))
     errors))
 
 (defun validate-csv-row (row &optional template)
