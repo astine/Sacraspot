@@ -149,3 +149,8 @@
 		       "-" 
 		       (subseq number 6))
 	(condition () (error "Problem pretty printing phone number: ~a" number)))))
+
+(defun format-hr-timestamp (time)
+  (when time
+    (format-timestring nil time
+		       :format '(:short-month " " :day ", " :year " ":hour12 ":" (:min 2) " " :ampm))))

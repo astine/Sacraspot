@@ -253,9 +253,6 @@
 	      dows))(:br)
      (:input :type "submit" :value "submit"))))
 
-(defun format-hr-timestamp (time)
-  (format-timestring nil time
-		     :format '(:short-month " " :day ", " :year " ":hour12 ":" (:min 2) " " :ampm)))
 
 (defun current-events-html (&optional style cell-style)
   (with-html-output-to-string (*standard-output* nil :indent t :prologue nil)
