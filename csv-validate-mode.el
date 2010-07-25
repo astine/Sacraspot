@@ -13,14 +13,15 @@
   "Removes last character from string"
   (substring string 0 (1- (length string))))
 
-(defmacro for-rows (&rest body)
+(defmacro* for-rows ((&optional (start (point-min)) (end (point-max))) &rest body)
   "Executes the body once for each row in the buffer with the
    point at the beginning of each row"
   (let ((home (gensym)))
     `(let ((,home (point)))
-       (goto-char 1)
+       (goto-char ,start)
        ,@body
-       (while (zerop (forward-line))
+       (while (< (line-end-position 2) ,end)
+	 (forward-line)
 	 ,@body)
        (goto-char ,home))))
 
@@ -37,9 +38,11 @@
   "Prints a series of errors"
   (mapconcat #'print-error errors "\n"))
 
-(defun message-errors (errors)
+(defun message-errors (errors default)
   "Prints a series of errors"
-  (message (print-errors errors)))
+  (if errors
+      (message (print-errors errors))
+    (message default)))
 
 (defmacro defset (name accessor)
   `(defun ,name (error new-value)
@@ -173,23 +176,26 @@
 	(set-row err current-line)
 	(mark-error err))
       (when print-message
-	(if errors
-	    (message-errors errors)
-	  (message (format "No errors for row %i." current-line))))
+	(message-errors errors (format "No errors for row %i." current-line)))
       errors)))
+
+(defun validate-csv-region (&optional start end print-message)
+  "Validates a region in the buffer against the *template*"
+  (interactive "r\np")
+  (remove-overlays start end)
+  (let ((errors (list nil)))
+    (for-rows (start end) (nconc errors (validate-csv-at-point)))
+    (when print-message
+      (message-errors (rest errors) "No errors found in region."))
+    (rest errors)))
 
 (defun validate-csv-buffer (&optional print-message)
   "Validates entire buffer against *template*"
   (interactive "p")
-  (remove-overlays)
-  (let ((errors (list nil)))
-    (for-rows (nconc errors (validate-csv-at-point)))
+  (let ((errors (validate-csv-region (point-min) (point-max))))
     (when print-message
-      (if (rest errors)
-	  (message-errors (rest errors))
-	(message "Validating buffer: No errors")))
-    (rest errors)))
-
+      (message-errors errors "No errors found in buffer."))
+    errors))
 
 ;;; Emacs mode for csv file editing
 

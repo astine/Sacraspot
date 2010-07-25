@@ -101,26 +101,30 @@
 
 (defvar parishes/schedules :parishes)
 
-(defun submit-parish ()
-  (aif (validate-csv-buffer)
-       (message (concat "Cannot submit parishes because of errors:\n"
-			(print-errors it)))
-       (http-post-simple "http://www.beggersandbuskers.com:8080/insert-parishes"
-			 `((parishes . ,(buffer-string))))))
+(defun submit-parish (start end)
+  (http-post-simple "http://www.beggersandbuskers.com:8080/insert-parishes"
+		    `((parishes . ,(buffer-substring start end)))))
 
-(defun submit-schedule ()
-  (aif (validate-csv-buffer)
-       (message (concat "Cannot submit parishes because of errors:\n"
-			(print-errors it)))
-       (http-post-simple "http://www.beggersandbuskers.com:8080/insert-schedules"
-			 `((schedules . ,(buffer-string))))))
+(defun submit-schedule (start end)
+  (http-post-simple "http://www.beggersandbuskers.com:8080/insert-schedules"
+		    `((schedules . ,(buffer-substring start end)))))
 
 (defun submit ()
-  (interactive)
-  (message (case parishes/schedules
-	     (:parishes (submit-parish))
-	     (:schedules (submit-schedule)))))
+  (aif (validate-csv-buffer start end)
+       (concat "Cannot submit because of errors:\n"
+	       (print-errors it))
+       (case parishes/schedules
+	 (:parishes (submit-parish start end))
+	 (:schedules (submit-schedule start end)))))
 
+(defun submit-buffer ()
+  (interactive)
+  (message (submit (point-min) (point-max))))
+
+(defun submit-region (start end)
+  (interactive "r")
+  (message (submit start end)))
+ 
 (defun json-to-csv (json)
   (mapconcat (lambda (row)
 	       (mapconcat (lambda (element)
@@ -184,7 +188,8 @@
   (setq *template* parish-template)
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map csv-validate-mode-map)
-    (define-key map (kbd "C-c s") 'submit)
+    (define-key map (kbd "C-c s") 'submit-region)
+    (define-key map (kbd "C-c S") 'submit-buffer)
     (define-key map (kbd "C-c t") 'toggle-parishes/schedules)
     (use-local-map map)))
 
