@@ -1,8 +1,17 @@
 (require 'http-post-simple)
+(require 'json)
 
 (defun read-string (string)
   (ignore-errors
     (read-from-string string)))
+
+(defun ensure-string (item)
+  "Converts item to a string representation if applicable"
+  (typecase item
+    (integer (format "%i" item))
+    (null "")
+    (symbol (format "%s" item))
+    (string item)))
 
 (defvar *months* '("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"))
 (defvar *days-of-week* '("Mon" "Tue" "Wed" "Thu" "Fri" "Sat" "Sun"))
@@ -112,10 +121,51 @@
 	     (:parishes (submit-parish))
 	     (:schedules (submit-schedule)))))
 
-(defun query-parish ()
+(defun json-to-csv (json)
+  (mapconcat (lambda (row)
+	       (mapconcat (lambda (element)
+			    (format "\"%s\"" (ensure-string (cdr element))))
+			  (nreverse row)
+			  ","))
+	     (map 'list #'identity (json-read-from-string json))
+	     "\n"))
+    
+(defun json-row-to-csv (json-row)
+  (mapconcat #'cdr json-row ","))
+
+(defun* query-parish (&optional parish-id fullname shortname
+			   country state city street street-number zip
+			   phone email website
+			   latitude longitude diocese)
+  (json-to-csv
+   (car
+    (http-post-simple "http://www.beggersandbuskers.com:8080/select-parishes"
+		      (delq nil
+			    (list
+			     (when parish-id `(parish-id . ,(ensure-string parish-id)))
+			     (when fullname `(fullname . ,(ensure-string fullname)))
+			     (when shortname `(shortname . ,(ensure-string shortname)))
+			     (when country `(country . ,(ensure-string country)))
+			     (when state `(state . ,(ensure-string state)))
+			     (when city `(city . ,(ensure-string city)))
+			     (when street `(street . ,(ensure-string street)))
+			     (when street-number `(street-number . ,(ensure-string street-number)))
+			     (when zip `(zip . ,(ensure-string zip)))
+			     (when phone `(phone . ,(ensure-string phone)))
+			     (when email `(email . ,(ensure-string email)))
+			     (when website `(website . ,(ensure-string website)))
+			     (when latitude `(latitude . ,(ensure-string latitude)))
+			     (when longitude `(longitude . ,(ensure-string longitude)))
+			     (when diocese `(diocese . ,(ensure-string diocese)))))))))
+
+(defun select-parish (&rest args)
+  (interactive "MParish-ID: \nMFullname: \nMShortname: \nMCountry: \nMState: \nMCity: \nMStreet: \nMStreet-Number: \nMZip: \nMPhone: \nMEmail: \nMWebsite: \nMLatitude: \nMLongitude: \nMDiocese")
+  (with-output-to-temp-buffer "*parishes*"
+    (print (apply #'query-parish args))))
   
 
 (defun toggle-parishes/schedules ()
+  "Switches between parishes and schedules modes"
   (interactive)
   (case parishes/schedules
     (:parishes (setq parishes/schedules :schedules)
