@@ -89,12 +89,14 @@
   `(lambda ,parameters (funcall ,function ,@lambda-list)))
 
 
-(defun fetch-parameter (parameter-name &optional default (parser #'read-from-string))
+(defun fetch-parameter (parameter-name &optional default (parser (lambda (param)
+								   (unless (equal param "")
+								     (read-from-string param)))))
   "A function to encapsulate some of the routine details of dealing with http
    parameters in hunchentoot handlers."
   (aif (parameter parameter-name)
     (if parser
-	(funcall parser parameter-name)
+	(funcall parser it)
 	it)
     default))
 		       
