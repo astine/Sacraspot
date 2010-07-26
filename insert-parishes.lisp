@@ -29,8 +29,9 @@
 			   'longitude longitude
 			   'diocese diocese))))
 
-(define-easy-handler (insert-parishes :uri "/insert-parishes" :default-request-type :post) ()
-  (let ((parishes (fetch-parameter "parishes" nil #'parse-csv)))
-    (with-connection *connection-spec*
-      (dolist (parish parishes)
-	(apply #'insert-parish parish)))))
+(define-easy-handler (insert-parishes* :uri "/insert-parishes" :default-request-type :post) ()
+  (with-connection *connection-spec*
+    ;(write-to-string (length (delete '("") (fetch-parameter "parishes" nil #'parse-csv) :test #'equal)))))
+    (dolist (parish (delete '("") (fetch-parameter "parishes" nil #'parse-csv) :test #'equal))
+      (apply #'insert-parish parish)))
+  "worked")
