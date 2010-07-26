@@ -21,6 +21,8 @@
 		   "MP" "OH" "OK" "OR" "PW" "PA" "PR" "RI" "SC" "SD" "TN" "TX" "UT"
 		   "VT" "VI" "VA" "WA" "WV" "WI" "WY"))
 
+(defvar *server-base-url* "http://www.beggersandbuskers.com:8080/")
+
 ;;parish template
 (defun fullname-p (field)
   (unless t "Bad Fullname"))
@@ -101,49 +103,32 @@
 
 (defvar parishes/schedules :parishes)
 
-(defun submit-parish (start end)
-  (http-post-simple "http://www.beggersandbuskers.com:8080/insert-parishes"
-		    `((parishes . ,(buffer-substring start end)))))
+;;; Querying
 
-(defun submit-schedule (start end)
-  (http-post-simple "http://www.beggersandbuskers.com:8080/insert-schedules"
-		    `((schedules . ,(buffer-substring start end)))))
-
-(defun submit ()
-  (aif (validate-csv-buffer start end)
-       (concat "Cannot submit because of errors:\n"
-	       (print-errors it))
-       (case parishes/schedules
-	 (:parishes (submit-parish start end))
-	 (:schedules (submit-schedule start end)))))
-
-(defun submit-buffer ()
-  (interactive)
-  (message (submit (point-min) (point-max))))
-
-(defun submit-region (start end)
-  (interactive "r")
-  (message (submit start end)))
+(defun json-to-lists (json)
+  "Converts a json string to a list of lists"
+  (map 'list #'identity
+       (json-read-from-string json)))
  
-(defun json-to-csv (json)
+(defun to-csv (server-output)
+  "Converts a list of association lists to csv rows
+   Used for printing data got from the server"
   (mapconcat (lambda (row)
 	       (mapconcat (lambda (element)
 			    (format "\"%s\"" (ensure-string (cdr element))))
 			  (nreverse row)
 			  ","))
-	     (map 'list #'identity (json-read-from-string json))
+	     server-output
 	     "\n"))
-    
-(defun json-row-to-csv (json-row)
-  (mapconcat #'cdr json-row ","))
 
 (defun* query-parish (&optional parish-id fullname shortname
-			   country state city street street-number zip
-			   phone email website
-			   latitude longitude diocese)
-  (json-to-csv
+				country state city street street-number zip
+				phone email website
+				latitude longitude diocese)
+  "Queries the server for parishes and returns them as a list of association lists."
+  (json-to-lists
    (car
-    (http-post-simple "http://www.beggersandbuskers.com:8080/select-parishes"
+    (http-post-simple (concat *server-base-url* "select-parishes")
 		      (delq nil
 			    (list
 			     (when parish-id `(parish-id . ,(ensure-string parish-id)))
@@ -162,11 +147,56 @@
 			     (when longitude `(longitude . ,(ensure-string longitude)))
 			     (when diocese `(diocese . ,(ensure-string diocese)))))))))
 
-(defun select-parish (&rest args)
+(defun* select-parish (&rest args)
+  "Queries the server for parishes and shows them in a separate buffer"
   (interactive "MParish-ID: \nMFullname: \nMShortname: \nMCountry: \nMState: \nMCity: \nMStreet: \nMStreet-Number: \nMZip: \nMPhone: \nMEmail: \nMWebsite: \nMLatitude: \nMLongitude: \nMDiocese")
   (with-output-to-temp-buffer "*parishes*"
-    (print (apply #'query-parish args))))
-  
+    (print (to-csv (apply #'query-parish args)))))
+
+(defun insert-select-parish (&rest args)
+  "Queries the server for parishes and inserts them at the point"
+  (interactive "MParish-ID: \nMFullname: \nMShortname: \nMCountry: \nMState: \nMCity: \nMStreet: \nMStreet-Number: \nMZip: \nMPhone: \nMEmail: \nMWebsite: \nMLatitude: \nMLongitude: \nMDiocese")
+  (insert (to-csv (apply #'query-parish args))))
+
+;;; Submission
+
+(defun submit-parish (start end)
+  "Submit region as parishes"
+  ;(concat
+   (http-post-simple (concat *server-base-url* "insert-parishes")
+		     `((parishes . ,(buffer-substring start end)))))
+   "\nIds assigned: "))
+   (mapconcat #'first
+	      (mapcar (lambda (row)
+			(apply #'query-parish row))
+		      (rows-as-lists start end))
+	      ",")))
+
+(defun submit-schedule (start end)
+  "Submit region as schedules"
+  (http-post-simple (concat *server-base-url* "insert-schedules")
+		    `((schedules . ,(buffer-substring start end)))))
+
+(defun submit (start end)
+  "Submits a number of rows to the database
+   these rows are first validated and then the proper submission function
+   is called depending on whether parishes or schedules are active."
+  (aif (validate-csv-region start end)
+       (concat "Cannot submit because of errors:\n"
+	       (print-errors it))
+       (case parishes/schedules
+	 (:parishes (submit-parish start end))
+	 (:schedules (submit-schedule start end)))))
+
+(defun submit-buffer ()
+  "Submits the entire buffer"
+  (interactive)
+  (message (submit (point-min) (point-max))))
+
+(defun submit-region (start end)
+  "Submits the region between the mark and the point"
+  (interactive "r")
+  (message (submit start end)))
 
 (defun toggle-parishes/schedules ()
   "Switches between parishes and schedules modes"

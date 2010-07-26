@@ -81,6 +81,13 @@
   "Breaks a row into its constituent fields with its quotes stripped off"
   (split-string  (substring row 1 (1- (length row))) (breakup-sequence)))
 
+(defun rows-as-lists (start end)
+  "Returns rows bounded by start and end as lists of their fields"
+  (let ((rows nil))
+    (for-rows (start end)
+      (push (break-row-into-fields (thing-at-point 'line)) rows))
+    (nreverse rows)))
+
 (defun get-field-limits (field &optional row)
   "Returns the begin and end position in text of a field in its particular row"
   (let ((fields (break-row-into-fields (or row (thing-at-point 'line)))))
@@ -162,7 +169,7 @@
 					       (set-field er count))
 					     (validate-csv-field field templ))))))))
 
-(defun validate-csv-at-point (&optional print-message) ;;FIXME - currently bombs if there is an error on the last row
+(defun validate-csv-at-point (&optional print-message)
   "Validates csv row at point against *template*
    meant for interactive and incremental validation
    returns error"
