@@ -11,7 +11,9 @@
 		(equal "" email)
 		(scan "[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.-]+[.].+" email))
       (error "Bad email address being added to parish table"))
-    (unless (= (length clean-phone) 10)
+    (unless (or (null clean-phone)
+		(equal "" clean-phone)
+		(= (length clean-phone) 10))
       (error "Bad phone number being added to parish table"))
     (execute (:insert-into 'parishes :set
 			   'fullname fullname
@@ -20,7 +22,7 @@
 			   'state state
 			   'city city
 			   'street street
-			   'street_number street-number
+			   'street_number (if (equal street-number "") "0" street-number)
 			   'zip zip
 			   'phone clean-phone
 			   'email email
