@@ -30,7 +30,7 @@
 	 (mon-to-char (concatenate 'string "TO_CHAR(" date-string ",E'Mon')"))
 	 (dow-to-char (concatenate 'string "TO_CHAR(" date-string ",E'dy')")))
     (execute (:insert-into 'events
-		(:select 'parish_id 'schedule_id (:as (:+ (:raw date-string) 'start-time) 'time)
+		(:select 'parish_id 'schedule_id (:as (:+ (:raw date-string) 'start-time) 'time) :distinct
 			 :from 'full_schedules
 			 :where (:and (:or (:= 'year (:extract 'year (:raw date-string)))
 					   (:is-null 'year))
