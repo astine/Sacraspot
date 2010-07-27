@@ -89,12 +89,14 @@
   `(lambda ,parameters (funcall ,function ,@lambda-list)))
 
 
-(defun fetch-parameter (parameter-name &optional default (parser #'read-from-string))
+(defun fetch-parameter (parameter-name &optional default (parser (lambda (param)
+								   (unless (equal param "")
+								     (read-from-string param)))))
   "A function to encapsulate some of the routine details of dealing with http
    parameters in hunchentoot handlers."
   (aif (parameter parameter-name)
     (if parser
-	(funcall parser parameter-name)
+	(funcall parser it)
 	it)
     default))
 		       
@@ -138,10 +140,19 @@
 	    (princ it out))))))
 					   
 (defun pretty-print-phone (number)
-  (concatenate 'string 
-	       "(" 
-	       (subseq number 0 3) 
-	       ") " 
-	       (subseq number 3 6) 
-	       "-" 
-	       (subseq number 6)))
+  (if (equal number "")
+      ""
+      (handler-case
+	  (concatenate 'string 
+		       "(" 
+		       (subseq number 0 3) 
+		       ") " 
+		       (subseq number 3 6) 
+		       "-" 
+		       (subseq number 6))
+	(condition () (error "Problem pretty printing phone number: ~a" number)))))
+
+(defun format-hr-timestamp (time)
+  (when time
+    (format-timestring nil time
+		       :format '(:short-month " " :day ", " :year " ":hour12 ":" (:min 2) " " :ampm))))

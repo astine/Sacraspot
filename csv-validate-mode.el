@@ -4,18 +4,24 @@
   `(let ((it ,condition))
      (if it ,on-true ,@on-false)))
 
+(defmacro aand (&rest args)
+  (cond ((null args) t)
+	((null (cdr args)) (car args))
+	(t `(aif ,(car args) (aand ,@(cdr args))))))
+
 (defun chop (string)
   "Removes last character from string"
   (substring string 0 (1- (length string))))
 
-(defmacro for-rows (&rest body)
+(defmacro* for-rows ((&optional (start (point-min)) (end (point-max))) &rest body)
   "Executes the body once for each row in the buffer with the
    point at the beginning of each row"
   (let ((home (gensym)))
     `(let ((,home (point)))
-       (goto-char 1)
+       (goto-char ,start)
        ,@body
-       (while (zerop (forward-line))
+       (while (< (line-end-position 2) ,end)
+	 (forward-line)
 	 ,@body)
        (goto-char ,home))))
 
@@ -32,9 +38,11 @@
   "Prints a series of errors"
   (mapconcat #'print-error errors "\n"))
 
-(defun message-errors (errors)
+(defun message-errors (errors default)
   "Prints a series of errors"
-  (message (print-errors errors)))
+  (if errors
+      (message (print-errors errors))
+    (message default)))
 
 (defmacro defset (name accessor)
   `(defun ,name (error new-value)
@@ -72,6 +80,13 @@
 (defun break-row-into-fields (row)
   "Breaks a row into its constituent fields with its quotes stripped off"
   (split-string  (substring row 1 (1- (length row))) (breakup-sequence)))
+
+(defun rows-as-lists (start end)
+  "Returns rows bounded by start and end as lists of their fields"
+  (let ((rows nil))
+    (for-rows (start end)
+      (push (break-row-into-fields (thing-at-point 'line)) rows))
+    (nreverse rows)))
 
 (defun get-field-limits (field &optional row)
   "Returns the begin and end position in text of a field in its particular row"
@@ -130,10 +145,9 @@
 	      (funcall template field))
       (push (make-error :message it) errors))
 					;checking that '\' always preceeds '"' within a field
-    (let ((pos (position field-delimiter field)))
-      (if (and pos
-	       (equal ?\\ (elt field (1- pos))))
-	  (push (make-error :message "Missing or misplaced quotation marks") errors)))
+    (if (aand (position field-delimiter field)
+	      (not (equal ?\\ (elt field (1- it)))))
+	(push (make-error :message (concat "Missing or misplaced quotation marks: " field)) errors))
     errors))
 
 (defun validate-csv-row (row &optional template)
@@ -155,7 +169,7 @@
 					       (set-field er count))
 					     (validate-csv-field field templ))))))))
 
-(defun validate-csv-at-point (&optional print-message) ;;FIXME - currently bombs if there is an error on the last row
+(defun validate-csv-at-point (&optional print-message)
   "Validates csv row at point against *template*
    meant for interactive and incremental validation
    returns error"
@@ -169,23 +183,26 @@
 	(set-row err current-line)
 	(mark-error err))
       (when print-message
-	(if errors
-	    (message-errors errors)
-	  (message (format "No errors for row %i." current-line))))
+	(message-errors errors (format "No errors for row %i." current-line)))
       errors)))
+
+(defun validate-csv-region (&optional start end print-message)
+  "Validates a region in the buffer against the *template*"
+  (interactive "r\np")
+  (remove-overlays start end)
+  (let ((errors (list nil)))
+    (for-rows (start end) (nconc errors (validate-csv-at-point)))
+    (when print-message
+      (message-errors (rest errors) "No errors found in region."))
+    (rest errors)))
 
 (defun validate-csv-buffer (&optional print-message)
   "Validates entire buffer against *template*"
   (interactive "p")
-  (remove-overlays)
-  (let ((errors (list nil)))
-    (for-rows (nconc errors (validate-csv-at-point)))
+  (let ((errors (validate-csv-region (point-min) (point-max))))
     (when print-message
-      (if (rest errors)
-	  (message-errors (rest errors))
-	(message "Validating buffer: No errors")))
-    (rest errors)))
-
+      (message-errors errors "No errors found in buffer."))
+    errors))
 
 ;;; Emacs mode for csv file editing
 
