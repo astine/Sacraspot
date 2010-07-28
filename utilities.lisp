@@ -49,6 +49,10 @@
 	   (cons (subseq list 0 n)
 		 (group (subseq list n) n))))))
   
+(defmacro while (condition &body body)
+  "Loops indefinitely while condition is true"
+  `(do () ((not ,condition)) ,@body))
+
 (defmacro aif (condition &body body)
   "anaphoric if"
   `(let ((it ,condition))
@@ -98,6 +102,10 @@
 
 (defmacro call-with (function parameters lambda-list)
   `(lambda ,parameters (funcall ,function ,@lambda-list)))
+
+(defun to-list (item)
+  "Wraps an item in a list, unless the item is :null or nil, in which case, return the empty list"
+  (and (coalesce item) (list item)))
 
 ;;;
 ;;; Functions and macros dealing with sacraspot specific issues

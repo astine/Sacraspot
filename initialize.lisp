@@ -2,9 +2,6 @@
 
 (cl:in-package #:sacraspot)
 
-(defmacro while (condition &body body)
-  `(do () ((not ,condition)) ,@body))
-
 (defmacro load-settings (file-path) 
   "Opens a file with sexp ordered pairs and of the form:
    (SYMBOL . VALUE) and for each pair, creates a global

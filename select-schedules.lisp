@@ -13,10 +13,6 @@
 ;month
 ;year
 
-(defun to-list (item)
-  "Wraps an item in a list, unless the item is :null or nil, in which case, return the empty list"
-  (and (coalesce item) (list item)))
-
 (defun select-schedules (parish-id sacrament-type start-time end-time language details dom dow month year)
   "Selects a set of schedules from the db according to the given filters, and returns the results
    encoded in a json string."
