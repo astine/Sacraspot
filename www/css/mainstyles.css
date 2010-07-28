@@ -1,0 +1,179 @@
+/*
+Sticky Footer thanks to Ryan Fait
+http://ryanfait.com/
+*/
+ * {
+    margin: 0;
+}
+html, body {
+    height: 100%;
+}
+.wrapper {
+    min-height: 100%;
+    height: auto !important;
+    height: 100%;
+    /* the bottom margin is the negative value of the footer's height */
+    margin: 0 auto -3em;
+}
+/* .push must be the same height as .footer */
+.footer, .push {
+    height: 3em;
+}
+
+/* Shared Styles */
+a {
+    color: #33C;
+    text-decoration: none;
+}
+body {
+    background-color: #FEFEFE;
+    font-family: Arial, Helvetica, sans-serif;
+    text-align: center;
+}
+form {
+    background-color: #33A;
+    border: 1px solid #CCC;
+    margin: 1em 1em;
+    padding: 0 0;
+}
+form, form ul {
+    border-radius: .7em;
+    -moz-border-radius: .7em;
+    -webkit-border-radius: .7em;
+}
+form ul {
+    border: 1px solid #FFF;
+    margin: .1em .1em;
+    padding: 1em 1em;
+}
+h1, h2, h3, h4, h5 {
+    font-family: Georgia, "Times New Roman", serif;
+}
+h1 {
+    border-bottom: .1em solid #33F;
+    color: #337;
+    margin: 0 auto;
+    width: 7em;
+}
+h2 {
+    font-size: .8em;
+}
+input {
+    
+}
+input.active, input.button {
+    color: #000;
+}
+label {
+    font-weight: bold;
+    padding-right: .3em;
+}
+li, ul {
+    list-style: none;
+}
+#main_body {
+    margin: 0 auto;
+    width: 600px;
+}
+#main_header {
+    padding-top: 10%;
+}
+.clear {
+    clear: both;
+    float: none;
+    width: inherit;
+}
+
+/* Map Page Styles */
+#Results {
+    display: none;
+}
+#Directions {
+    border: 3px ridge #333;
+    width: auto;
+}
+#map_container {
+    border: 5px double #333;
+    height: 24em;
+    text-align: left;
+    width: auto;
+}
+#gMaps {
+    height: 700px;
+    margin: 0;
+    padding: 0;
+    width: 700px;
+}
+#filters_1, #filters_2 {
+    color: #FFF;
+    display: none;
+    font-size: .8em;
+    font-weight: bold;
+    margin-top: 1.7em;
+}
+#filters_1 a, #filters_2 a {
+    color: #FFF;
+}
+#filters_1 {
+    float: left;
+    margin-left: .7em;
+}
+#filters_2 {
+    float: right;
+    margin-right: .7em;
+}
+
+/* Unused Styles */
+.body_column_a, .body_column_b, .column_sidebar {
+    margin: 0 5px;
+    padding: 0 0;
+    text-align: center;
+}
+.body_column_a a, .body_column_b a, .column_sidebar a {
+    background-color: #CCF;
+    border-bottom: 20px solid #CCF;
+    border-top: 20px solid #CCF;
+    color: #000;
+    display: block;
+    margin: 0 0 1px 0;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-decoration: none;
+    width: auto;
+}
+.body_column_a a:hover, .body_column_b a:hover, .column_sidebar a:hover {
+    background-color: #EEF;
+    border-color: #EEF;
+    cursor: pointer;
+    text-decoration: inherit;
+}
+.info_add {
+    color: #777;
+    font-size: .9em;
+    font-weight: bold;
+}
+.info_key {
+    font-weight: bold;
+}
+input.button {
+    background-color: #CCF;
+    border: 1px solid #999;
+    color: #333;
+    font-size: .7em;
+    margin-right: 3px;
+    padding: 0 5px;
+}
+
+/* Front Page Styles */
+.body_column_a, .body_column_b {
+    border: 1px solid #000;
+    width: 288px;
+}
+.body_column_a {
+    clear: left;
+    float: left;
+}
+.body_column_b {
+    clear: right;
+    float: right;
+}
