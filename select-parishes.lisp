@@ -48,7 +48,8 @@
 				   ,(if street-number `(:= street_number ,street-number) t)
 				   ,(if phone `(:= phone ,(clean-phone phone)) t)))))
 	    (parish-id fullname shortname country state city street street-number zip phone email website latitude longitude diocese)
-	  (setf phone (pretty-print-phone phone))
+	  (when (standard-phone-number-p phone)
+	    (setf phone (pretty-print-phone phone)))
 	  (setf latitude (write-to-string latitude))
 	  (setf longitude (write-to-string longitude))
 	  (make-objects parish-id fullname shortname country state

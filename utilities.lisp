@@ -158,6 +158,15 @@
 						    (first sublist)))) 
 		    (scan-list (make-set number-list) nil nil)))))
 
+(defun digit-p (digit)
+  (<= 48 (char-code digit) 57)) 
+
+(defun standard-phone-number-p (number)
+  "Checks that a phone number string is complete and not malformed"
+  (declare (type string number))
+  (and (equal (length number) 10)
+       (every #'digit-p number)))
+
 (defun clean-phone (number)
   "Reduces a phone number to a string of numerals"
   (declare (type string number))
@@ -171,17 +180,15 @@
 (defun pretty-print-phone (number)
   (declare (type string number))
   "Takes a string of numberals and prints it in the American phone number format"
-  (if (equal number "")
-      ""
-      (handler-case
-	  (concatenate 'string 
-		       "(" 
-		       (subseq number 0 3) 
-		       ") " 
-		       (subseq number 3 6) 
-		       "-" 
-		       (subseq number 6))
-	(condition () (error "Problem pretty printing phone number: ~a" number)))))
+  (handler-case
+      (concatenate 'string 
+		   "(" 
+		   (subseq number 0 3) 
+		   ") " 
+		   (subseq number 3 6) 
+		   "-" 
+		   (subseq number 6))
+    (condition () (error "Problem pretty printing phone number: ~a" number))))
 
 (defun format-hr-timestamp (time)
   "Formats a timestamp to a string of the form: MM DD, YYYY HH:MM AM/PM"
