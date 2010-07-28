@@ -38,7 +38,7 @@
 			   'longitude longitude
 			   'diocese diocese))))
 
-(define-easy-handler (insert-parishes* :uri "/insert-parishes" :default-request-type :post) ()
+(define-easy-handler (insert-parishes :uri "/insert-parishes" :default-request-type :post) ()
   "Handles calls to insert-parishes; parses CSV and insert-parishes for each row"
   (with-connection *connection-spec*
     ;(write-to-string (length (delete '("") (fetch-parameter "parishes" nil #'parse-csv) :test #'equal)))))

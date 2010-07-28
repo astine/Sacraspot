@@ -15,6 +15,7 @@
 	       (:file "select-schedules")
 	       (:file "insert-parishes")
 	       (:file "insert-schedules")
+	       (:file "tests")
 	       (:file "frontpage")
                (:file "admin")
                (:file "bulk"))
