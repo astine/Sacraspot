@@ -1,4 +1,8 @@
+;;; website bulk.lisp - Andrew Stine (C) 2009-2010
+
 (in-package #:sacraspot)
+
+;;;The old bulk upload page - obsolete, use insert-parishes and insert-schedules
 
 ;;convenience macros for inserting javascript in page headers
 (defmacro ps-script (&body forms)

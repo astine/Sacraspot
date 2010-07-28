@@ -1,6 +1,10 @@
-;;; website caching.lisp - Andrew Stine (C) 2009
+;;; website caching.lisp - Andrew Stine (C) 2009-2010
 
 (in-package #:sacraspot)
+
+;;; These are macros to define function with implicit forms of caching
+;;; much of this is over-engineered, and may need some serious simplification
+;;; later on.
 
 (defmacro cached-lambda ((lambda-list &key timeout flag flag-auto-unset frequency no-dispatch-params ) 
 			 &body body)

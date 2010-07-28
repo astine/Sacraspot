@@ -1,13 +1,20 @@
-;;; website utilities.lisp - Andrew Stine (C) 2009
+;;; website utilities.lisp - Andrew Stine (C) 2009-2010
 
 (in-package #:sacraspot)
 
+;;;
+;;; General language extensions
+;;;
+
 (defun alist-to-plist (alist)
+  "Converts an association list to a properties list"
   (mapcan #'(lambda (pair) 
 	      (list (car pair) (cdr pair)))
 	  alist))
 
 (defmacro with-gensyms (symbols &body body)
+  "Provides generated, unique symbols for use within the body of a macro
+   (to avoid namecapture)"
   `(let ,(mapcar #'(lambda (symbol)
 		     `(,symbol (gensym)))
 		 symbols)
@@ -31,7 +38,7 @@
 		 ;(setf (gethash (list ,@params) ,table)
 		       ;(progn ,@body)))))))))
 
-(eval-when (:compile-toplevel :load-toplevel)
+(eval-when (:compile-toplevel :load-toplevel) ;evaluated early so macros can use this
   (defun group (list n)
     "Partitions a list into a list of sublists of length 'n'"
     (cond ((null list)
@@ -53,6 +60,8 @@
        ((not it)) ,@body))
 
 (defmacro arc-if (&body forms)
+  "Alternate syntax for cond/if statments
+   (borrowed from arc lisp)"
   `(cond ,@(mapcar #'(lambda (clause)
 		       (if (= (list-length clause) 2)
 			   clause
@@ -60,11 +69,13 @@
 		   (sacraspot::group forms 2))))
 
 (defun get-range (begin end)
+  "Generates a list of numbers between begin and end"
   (if (<= begin end)
       (cons begin (get-range (1+ begin) end))))
 
 (defmacro range (begin &optional end)
-  "Returns a list of number between 'begin' and 'end'"
+  "Returns a list of numbers between 'begin' and 'end'
+   (will attempt to generate at compile time if possible)"
   (arc-if (and (listp begin)
 	       (null end))
 	  `(apply #'get-range ,begin)
@@ -88,6 +99,9 @@
 (defmacro call-with (function parameters lambda-list)
   `(lambda ,parameters (funcall ,function ,@lambda-list)))
 
+;;;
+;;; Functions and macros dealing with sacraspot specific issues
+;;;
 
 (defun fetch-parameter (parameter-name &optional default (parser (lambda (param)
 								   (unless (equal param "")
@@ -101,8 +115,8 @@
     default))
 		       
 (defun parse-number-span (span)
-  "Take a string of the form '1-3, 5, 8-10', and returns an order
-   list of  every number, represented by the string"
+  "Take a string of the form '1-3, 5, 8-10', and returns an ordered
+   list of every number, represented by the string"
   (make-set
    (mapcan #'(lambda (part)
 	       (cond ((cl-ppcre:scan "[0-9]+-[0-9]+" part)
@@ -140,6 +154,7 @@
 	    (princ it out))))))
 					   
 (defun pretty-print-phone (number)
+  "Takes a string of numberals and prints it in the American phone number format"
   (if (equal number "")
       ""
       (handler-case
@@ -153,6 +168,7 @@
 	(condition () (error "Problem pretty printing phone number: ~a" number)))))
 
 (defun format-hr-timestamp (time)
+  "Formats a timestamp to a string of the form: MM DD, YYYY HH:MM AM/PM"
   (when time
     (format-timestring nil time
 		       :format '(:short-month " " :day ", " :year " ":hour12 ":" (:min 2) " " :ampm))))

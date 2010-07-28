@@ -1,6 +1,10 @@
-;;; website admin.lisp - Andrew Stine (C) 2009
+;;; website admin.lisp - Andrew Stine (C) 2009-2010
 
 (in-package #:sacraspot)
+
+;;; This file containes all of the old administrative pages for sacraspot
+;;; This is dated
+;;; most of the functionality has moved or duplicated elsewhere
 
 ;; constants and parameters:
 (defvar states '(("AL" . "Alabama") ("AK" . "Alaska") ("AZ" . "Arizona") ("AR" . "Arkansas") 

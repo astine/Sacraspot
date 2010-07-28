@@ -1,6 +1,8 @@
-;;; website csv.lisp - Andrew Stine (C) 2009
+;;; website csv.lisp - Andrew Stine (C) 2009-2010
 
 (in-package #:sacraspot)
+
+;;; Some functions for parsing csv text
 
 (defun parse-csv-stream (csv-stream)
   "parses a csv stream into a list of lists, each sublist

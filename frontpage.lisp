@@ -1,8 +1,11 @@
-;;; website frontpage.lisp - Andrew Stine (C) 2009
+;;; website frontpage.lisp - Andrew Stine (C) 2009-2010
 
 (in-package #:sacraspot)
 
+;;; A simplifies homepage for sacraspot
+
 (define-easy-handler (frontpage :uri "/" :default-request-type :post) ()
+  "Displays a page with the results of a query to sacrament database"
   (with-connection *connection-spec*
     (with-html-output-to-string (*standard-output* nil :prologue t :indent t)
       (:html

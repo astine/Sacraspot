@@ -1,4 +1,4 @@
-;;; website insert-schedules.lisp - Andrew Stine (C) 2009
+;;; website insert-schedules.lisp - Andrew Stine (C) 2009-2010
 
 ;;This file contains the web interface for inserting schedules
 ;;it accepts a single http parameters 'schedules' which should
@@ -20,28 +20,32 @@
 
 (in-package #:sacraspot)
 
-(defvar months '(("Jan" . "January")("Feb" . "February")("Mar" . "March")
-		 ("Apr" . "April")("May" . "May") ("Jun" . "June")
-		 ("Jul" . "July")("Aug" . "August") ("Sep" . "September")
-		 ("Oct" . "October")("Nov" . "November") ("Dec" . "December")))
+(defvar *months* '(("Jan" . "January")("Feb" . "February")("Mar" . "March")
+		   ("Apr" . "April")("May" . "May") ("Jun" . "June")
+		   ("Jul" . "July")("Aug" . "August") ("Sep" . "September")
+		   ("Oct" . "October")("Nov" . "November") ("Dec" . "December")))
 
-(defvar dows '(("Mon" . "Monday") ("Tue" . "Tuesday") ("Wed" . "Wednesday") ("Thu" . "Thursday")
-	       ("Fri" . "Friday") ("Sat" . "Saturday") ("Sun" . "Sunday")))
+(defvar *dows* '(("Mon" . "Monday") ("Tue" . "Tuesday") ("Wed" . "Wednesday") ("Thu" . "Thursday")
+		 ("Fri" . "Friday") ("Sat" . "Saturday") ("Sun" . "Sunday")))
 
 (defun numbers-to-listitem (numbers list &optional (itemtype "item"))
-  (unless (< (list-length numbers) (list-length list))
-    (error (format nil "~A list is out of range or malformed: ~A" itemtype list)))
-  (mapcar (lambda (number)
-	    (unless (and (> number 0) (< number (list-length list)))
-	      (error (format nil "~A is out of range: ~A" itemtype number)))
-	    (rest (nth (1- number) list)))
-	  numbers))
+  "Fetches elements of 'list' as indexed by 'numbers'"
+  (when numbers
+    (unless (<= (list-length numbers) (list-length list))
+      (error (format nil "~A list is out of range or malformed: ~A" itemtype list)))
+    (mapcar (lambda (number)
+	      (unless (<= 1 number (list-length list))
+		(error (format nil "~A is out of range: ~A" itemtype number)))
+	      (car (nth (1- number) list)))
+	    numbers)))
 
 (defun numbers-to-months (numbers)
-  (numbers-to-listitem numbers months "month"))
+  "Convert numerical monthes to month names"
+  (numbers-to-listitem numbers *months* "month"))
 
 (defun numbers-to-dows (numbers)
-  (numbers-to-listitem numbers dows "day-of-week"))
+  "Converts a list of numerical days of the week to the names of the days of the week"
+  (numbers-to-listitem numbers *dows* "day-of-week"))
 
 (defun insert-schedule (parish sacrament-type start-time end-time details
 			years months doms dows)
@@ -52,6 +56,8 @@
   (when (stringp months) (setf months (parse-number-span months)))
   (when (stringp doms) (setf doms (parse-number-span doms)))
   (when (stringp dows) (setf dows (parse-number-span dows)))
+  (when (equal "" start-time) (setf start-time :null))
+  (when (equal "" end-time) (setf end-time :null))
   (with-transaction ()
     (execute (:insert-into 'schedules :set
 			   'parish_id parish
@@ -70,6 +76,7 @@
 
 
 (define-easy-handler (insert-schedules :uri "/insert-schedules" :default-request-type :post) ()
+  "Handles callses to insert-schedules; parses CSV and calls insert-schedules for each row"
   (let ((schedules (fetch-parameter "schedules" nil #'parse-csv)))
     (with-connection *connection-spec*
       (dolist (schedule schedules)

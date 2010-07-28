@@ -1,8 +1,8 @@
-;;; website select-parishes.lisp - Andrew Stine (C) 2009
+;;; website select-parishes.lisp - Andrew Stine (C) 2009-2010
 
 (in-package #:sacraspot)
 
-;;query elements:
+;; Fields in table:
 ;fullname
 ;shortname
 ;country
@@ -16,11 +16,15 @@
 ;latitude
 ;longitude
 ;diocese
+; Queries can be filtered by these fields
 
 (defun select-parishes (parish-id fullname shortname
 			country state city street street-number zip
 			phone email website
 			latitude longitude diocese)
+  "Queries the database for parishes, returning a JSON list of hashes each representing a
+   returned parish. Results can be filtered by specifying the value for a specific field;
+   leave a field blank to allow for any value."
   (macrolet ((make-objects (&body vars)
 	       `(yason:with-object ()
 		  ,@(mapcar (lambda (var)
@@ -52,6 +56,7 @@
 			website latitude longitude diocese))))))
 
 (define-easy-handler (select-parishes* :uri "/select-parishes" :default-request-type :post) ()
+  "Dispatches requests to select-parishes; calles select-parishes directly using parameters passed by the client"
   (with-connection *connection-spec*
     (apply #'select-parishes 
 	   (mapcar #'fetch-parameter '("parish-id" "fullname" "shortname" "country" "state"
