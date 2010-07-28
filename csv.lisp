@@ -7,6 +7,7 @@
 (defun parse-csv-stream (csv-stream)
   "parses a csv stream into a list of lists, each sublist
    corresponding to a row in the csv stream"
+  (declare (type stream csv-stream))
   (let ((out-rows nil)
 	(row nil)
 	(cell (make-string-output-stream))
@@ -34,6 +35,7 @@
   
 (defun parse-csv (csv)
   "like 'parse-csv-stream' but accepts a string as input"
-  (if (stringp csv)
-      (parse-csv-stream (make-string-input-stream csv))
-      (parse-csv-stream csv)))
+  (typecase csv
+    (string (parse-csv-stream (make-string-input-stream csv)))
+    (stream (parse-csv-stream csv))
+    (t (error "Bad CSV: ~a, wrong type: ~a" csv (type-of csv)))))

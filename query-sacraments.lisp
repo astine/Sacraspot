@@ -14,6 +14,8 @@
 
 (defun query-sacraments (time distance future maxresults sacraments language latitude longitude)
   "Returns a JSON string containing the results of query based on the constraints provided."
+  (declare (type local-time:timestamp time) (type integer distance future maxresults)
+	   (type list sacraments) (type string language) (type float latitude longitude))
   (yason:with-output-to-string* ()
     (yason:with-array ()
       (doquery (:limit

@@ -8,6 +8,7 @@
 
 (defun alist-to-plist (alist)
   "Converts an association list to a properties list"
+  (declare (type list alist))
   (mapcan #'(lambda (pair) 
 	      (list (car pair) (cdr pair)))
 	  alist))
@@ -74,6 +75,7 @@
 
 (defun get-range (begin end)
   "Generates a list of numbers between begin and end"
+  (declare (type integer begin end))
   (if (<= begin end)
       (cons begin (get-range (1+ begin) end))))
 
@@ -90,6 +92,7 @@
 
 (defun make-set (list &optional (eql-test #'=) (predicate #'<))
   "sorts a list and filters out duplicates"
+  (declare (type list list) (type function eql-test predicate))
   (labels ((filter-dups (lst)
 	     (arc-if (null lst)
 		     nil
@@ -116,6 +119,7 @@
 								     (read-from-string param)))))
   "A function to encapsulate some of the routine details of dealing with http
    parameters in hunchentoot handlers."
+  (declare (type string parameter-name) (type function parser))
   (aif (parameter parameter-name)
     (if parser
 	(funcall parser it)
@@ -125,6 +129,7 @@
 (defun parse-number-span (span)
   "Take a string of the form '1-3, 5, 8-10', and returns an ordered
    list of every number, represented by the string"
+  (declare (type string span))
   (make-set
    (mapcan #'(lambda (part)
 	       (cond ((cl-ppcre:scan "[0-9]+-[0-9]+" part)
@@ -137,6 +142,7 @@
 (defun make-number-span (number-list)
   "Takes a list of numbers and returns a string of the form:
    '1-3, 5, 8-10', representing the numbers in the list"
+  (declare (type list number-list))
   (labels ((scan-list (nums curr acc)
 	     (cond ((null nums)
 		    (cons curr acc))
@@ -154,6 +160,7 @@
 
 (defun clean-phone (number)
   "Reduces a phone number to a string of numerals"
+  (declare (type string number))
   (with-output-to-string (out)
     (with-input-from-string (in number)
       (awhile (read-char in nil nil)
@@ -162,6 +169,7 @@
 	    (princ it out))))))
 					   
 (defun pretty-print-phone (number)
+  (declare (type string number))
   "Takes a string of numberals and prints it in the American phone number format"
   (if (equal number "")
       ""

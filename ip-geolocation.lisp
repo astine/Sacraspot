@@ -10,14 +10,17 @@
 
 (defun normalize-ip (ip-address)
   "Converts and ip address to a single integer"
+  (declare (type string ip-address))
   (multiple-value-bind (whole-match fields)
       (scan-to-strings "([0-9]*)\.([0-9]*)\.([0-9]*)\.([0-9]*)" ip-address)
-    (unless (equal whole-match ip-address)
-      (error "bad ip"))
-    (+ (* (read-from-string (elt fields 0)) 16777216)
-       (* (read-from-string (elt fields 1)) 65536)
-       (* (read-from-string (elt fields 2)) 256)
-       (read-from-string (elt fields 3)))))
+    (setq fields (mapcar #'read-from-string fields))
+    (unless (and (equal whole-match ip-address)
+		 (every (lambda (num) (<= 0 num 255)) fields))
+      (error "bad ip: ~a" ip-address))
+    (+ (* (elt fields 0) 16777216)
+       (* (elt fields 1) 65536)
+       (* (elt fields 2) 256)
+       (elt fields 3))))
 
 (defcached get-locale (:flag *geolocus-db-changed* :flag-auto-unset t)
     (ip-address)
@@ -32,11 +35,11 @@
 
 (defun latitude-and-longitude (ip-address)
   "Returns the latitude and longitude as stored for a given ip address"
-  (let ((locale (get-locale ip-address)))
-    (if locale
-	(list (getf locale :latitude)
-	      (getf locale :longitude))
-	(list 38.7705012 -77.4287641)))) ;FIXME: should do something about this default
+  (declare (type string ip-address))
+  (aif (get-locale ip-address)
+    (list (getf it :latitude)
+	  (getf it :longitude))
+    (warn "latitude or longitude found for ip ~A" ip-address)))
 
 
 ; other thoughts:
