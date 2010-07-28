@@ -46,7 +46,7 @@
 	      (progn (if (coalesce dom) (pushnew dom (eighth prev-row) :test #'equal))
 		     (if (coalesce dow) (pushnew dow (ninth prev-row) :test #'equal))
 		     (if (coalesce month) (pushnew month (tenth prev-row) :test #'equal))
-		     (if (coalesce year) (pushnew year (nth 11 prev-row) :test #'equal)))
+		     (if (coalesce year) (pushnew year (nth 10 prev-row) :test #'equal)))
 	      (progn (if prev-row
 			 (yason:with-object ()
 			   (yason:encode-object-element "PARISH-ID" (second prev-row))

@@ -92,7 +92,7 @@
 
 (defun make-set (list &optional (eql-test #'=) (predicate #'<))
   "sorts a list and filters out duplicates"
-  (declare (type list list) (type function eql-test predicate))
+  (declare (type list list))
   (labels ((filter-dups (lst)
 	     (arc-if (null lst)
 		     nil
@@ -119,7 +119,7 @@
 								     (read-from-string param)))))
   "A function to encapsulate some of the routine details of dealing with http
    parameters in hunchentoot handlers."
-  (declare (type string parameter-name) (type function parser))
+  (declare (type string parameter-name))
   (aif (parameter parameter-name)
     (if parser
 	(funcall parser it)

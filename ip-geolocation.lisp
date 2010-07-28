@@ -13,7 +13,7 @@
   (declare (type string ip-address))
   (multiple-value-bind (whole-match fields)
       (scan-to-strings "([0-9]*)\.([0-9]*)\.([0-9]*)\.([0-9]*)" ip-address)
-    (setq fields (mapcar #'read-from-string fields))
+    (setq fields (map 'list #'read-from-string fields))
     (unless (and (equal whole-match ip-address)
 		 (every (lambda (num) (<= 0 num 255)) fields))
       (error "bad ip: ~a" ip-address))
