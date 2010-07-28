@@ -28,6 +28,5 @@
 	       :cl-who
                :cl-ppcre
 	       :fiveam
-	       :ht-ajax
 	       :postmodern
 	       :yason))

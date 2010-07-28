@@ -13,7 +13,6 @@
 	#:cl-who      ;HTML generation library
 	#:local-time  ;For consistent date+time handling
 	#:js 	
-	#:ht-ajax     ;Hunchentoot ajax toolkit (should be removed)
 	#:postmodern  ;Database access layer
 	#:yason       ;JSON parser/generator
 	)

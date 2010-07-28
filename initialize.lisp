@@ -50,13 +50,13 @@
 ;; ajax callbacks
 
 ; this stuff is for use with ht-ajax - probable that we don't really need it
-(defparameter *ajax-handler-uri* "/ajax")
+;(defparameter *ajax-handler-uri* "/ajax")
 
-(defparameter *ajax-processor* (make-ajax-processor 
-				:type :prototype
-				:server-uri *ajax-handler-uri*
-				:js-file-uris (namestring 
-					       (merge-pathnames *js-dir* "/prototype.js"))))
+;(defparameter *ajax-processor* (make-ajax-processor 
+				;:type :prototype
+				;:server-uri *ajax-handler-uri*
+				;:js-file-uris (namestring 
+					       ;(merge-pathnames *js-dir* "/prototype.js"))))
 
 ;;timezone
 
