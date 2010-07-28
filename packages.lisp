@@ -48,8 +48,8 @@
 	   #:load-settings
 	   #:reload-settings
 	   
-	   #:query-sacrament
-	   #:query-sacrament*
+	   #:query-sacraments
+	   #:query-sacraments*
 	   #:select-parishes
 	   #:select-parishes*
 	   #:select-schedules
