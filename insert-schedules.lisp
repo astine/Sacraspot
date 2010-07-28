@@ -1,5 +1,5 @@
-;;; website insert-schedules.lisp - Andrew Stine (C) 2009
-
+;; website insert-schedules.lisp - Andrew Stine (C) 2009
+ 
 ;;This file contains the web interface for inserting schedules
 ;;it accepts a single http parameters 'schedules' which should
 ;;contain csv data
