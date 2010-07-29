@@ -5,6 +5,10 @@
 (use-package 'postmodern)
 (use-package 'local-time)
 
+;; log action
+(with-open-file (log "/var/log/sacraspot" :direction :output :if-exists :append)
+  (format log "~A - ~A:~T~A" (sacraspot::format-hr-timestamp (now)) "manage-events" (second *posix-argv*)))
+
 (defmacro while (condition &body body)
   `(do () ((not ,condition)) ,@body))
 
@@ -62,7 +66,8 @@
 	((equal (second *posix-argv*) "update")
 	 (update-events (now)))))
 
+;; log completion
 (with-open-file (log "/var/log/sacraspot" :direction :output :if-exists :append)
-  (format log "~A:~T~A" "manage-events~%" (second *posix-argv*)))
+  (format log " - Done~%"))
 
 (quit)
