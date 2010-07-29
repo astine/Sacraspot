@@ -195,3 +195,7 @@
   (when time
     (format-timestring nil time
 		       :format '(:short-month " " :day ", " :year " ":hour12 ":" (:min 2) " " :ampm))))
+
+;;extension to yason JSON encoder
+(defmethod yason:encode ((object float) &optional (stream *standard-output*))
+  (format stream "~F" object))
