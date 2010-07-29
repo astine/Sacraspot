@@ -41,6 +41,18 @@
 	  (getf it :longitude))
     (warn "latitude or longitude found for ip ~A" ip-address)))
 
+(define-easy-handler (latitude-and-longitude* :uri "/latitude-and-longitude" :default-request-type :post) ()
+  "Returns the latitude and longitude as to clients in JSON format
+   Client can either provide an IP address as a parameter or the client's own
+   IP will be used."
+  (with-connection *connection-spec*
+    (destructuring-bind (latitude longitude)
+	(latitude-and-longitude (fetch-parameter "ip" (remote-addr*) nil))
+      (yason:with-output-to-string* ()
+	(yason:with-object ()
+	  (yason:encode-object-element "latitude" latitude)
+	  (yason:encode-object-element "longitude" longitude))))))
+
 
 ; other thoughts:
 ;
