@@ -26,6 +26,7 @@
 	       :trivial-shell
 	       :local-time
 	       :cl-who
+	       :html-template
                :cl-ppcre
 	       :fiveam
 	       :postmodern
