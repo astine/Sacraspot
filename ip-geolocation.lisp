@@ -39,7 +39,7 @@
   (aif (get-locale ip-address)
     (list (getf it :latitude)
 	  (getf it :longitude))
-    (warn "latitude or longitude found for ip ~A" ip-address)))
+    (warn "No latitude or longitude found for ip ~A" ip-address)))
 
 (define-easy-handler (latitude-and-longitude* :uri "/latitude-and-longitude" :default-request-type :post) ()
   "Returns the latitude and longitude as to clients in JSON format
