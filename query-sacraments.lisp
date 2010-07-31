@@ -113,7 +113,7 @@
 (define-easy-handler (query-sacraments* :uri "/query-sacraments" :default-request-type :post) ()
   "Handles calls to query-sacraments"
   (with-connection *connection-spec*
-    (let ((ip (fetch-parameter "ip" (remote-addr*) nil))
+    (let ((ip (fetch-parameter "ip" (real-remote-addr) nil))
 	  (time (fetch-parameter "time" (now) #'parse-timestring))
 	  (distance (fetch-parameter "distance" 25))
 	  (future (fetch-parameter "future" 453000))
