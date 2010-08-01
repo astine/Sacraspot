@@ -85,7 +85,7 @@
   "Returns rows bounded by start and end as lists of their fields"
   (let ((rows nil))
     (for-rows (start end)
-      (push (break-row-into-fields (thing-at-point 'line)) rows))
+      (push (break-row-into-fields (chop (thing-at-point 'line))) rows))
     (nreverse rows)))
 
 (defun get-field-limits (field &optional row)
