@@ -131,51 +131,51 @@
     (http-post-simple (concat *server-base-url* "select-parishes")
 		      (delq nil
 			    (list
-			     (when parish-id `(parish-id . ,(ensure-string parish-id)))
-			     (when fullname `(fullname . ,(ensure-string fullname)))
-			     (when shortname `(shortname . ,(ensure-string shortname)))
-			     (when country `(country . ,(ensure-string country)))
-			     (when state `(state . ,(ensure-string state)))
-			     (when city `(city . ,(ensure-string city)))
-			     (when street `(street . ,(ensure-string street)))
-			     (when street-number `(street-number . ,(ensure-string street-number)))
-			     (when zip `(zip . ,(ensure-string zip)))
-			     (when phone `(phone . ,(ensure-string phone)))
-			     (when email `(email . ,(ensure-string email)))
-			     (when website `(website . ,(ensure-string website)))
-			     (when latitude `(latitude . ,(ensure-string latitude)))
-			     (when longitude `(longitude . ,(ensure-string longitude)))
-			     (when diocese `(diocese . ,(ensure-string diocese)))))))))
+			     (when parish-id `(parish-id . ,(prin1-to-string parish-id)))
+			     (when fullname `(fullname . ,(prin1-to-string fullname)))
+			     (when shortname `(shortname . ,(prin1-to-string shortname)))
+			     (when country `(country . ,(prin1-to-string country)))
+			     (when state `(state . ,(prin1-to-string state)))
+			     (when city `(city . ,(prin1-to-string city)))
+			     (when street `(street . ,(prin1-to-string street)))
+			     (when street-number `(street-number . ,(prin1-to-string street-number)))
+			     (when zip `(zip . ,(prin1-to-string zip)))
+			     (when phone `(phone . ,(prin1-to-string phone)))
+			     (when email `(email . ,(prin1-to-string email)))
+			     (when website `(website . ,(prin1-to-string website)))
+			     (when latitude `(latitude . ,(prin1-to-string latitude)))
+			     (when longitude `(longitude . ,(prin1-to-string longitude)))
+			     (when diocese `(diocese . ,(prin1-to-string diocese)))))))))
+  ))
 
 (defun* select-parish (&rest args)
   "Queries the server for parishes and shows them in a separate buffer"
-  (interactive "MParish-ID: \nMFullname: \nMShortname: \nMCountry: \nMState: \nMCity: \nMStreet: \nMStreet-Number: \nMZip: \nMPhone: \nMEmail: \nMWebsite: \nMLatitude: \nMLongitude: \nMDiocese")
+  (interactive "MParish-ID: \nMFullname: \nMShortname: \nMCountry: \nMState: \nMCity: \nMStreet: \nMStreet-Number: \nMZip: \nMPhone: \nMEmail: \nMWebsite: \nMLatitude: \nMLongitude: \nMDiocese: ")
   (with-output-to-temp-buffer "*parishes*"
     (print (to-csv (apply #'query-parish args)))))
 
 (defun insert-select-parish (&rest args)
   "Queries the server for parishes and inserts them at the point"
-  (interactive "MParish-ID: \nMFullname: \nMShortname: \nMCountry: \nMState: \nMCity: \nMStreet: \nMStreet-Number: \nMZip: \nMPhone: \nMEmail: \nMWebsite: \nMLatitude: \nMLongitude: \nMDiocese")
+  (interactive "MParish-ID: \nMFullname: \nMShortname: \nMCountry: \nMState: \nMCity: \nMStreet: \nMStreet-Number: \nMZip: \nMPhone: \nMEmail: \nMWebsite: \nMLatitude: \nMLongitude: \nMDiocese: ")
   (insert (to-csv (apply #'query-parish args))))
 
 ;;; Submission
 
 (defun submit-parish (start end)
   "Submit region as parishes"
-  ;(concat
-   (http-post-simple (concat *server-base-url* "insert-parishes")
-		     `((parishes . ,(buffer-substring start end)))))
-   "\nIds assigned: "))
-   (mapconcat #'first
-	      (mapcar (lambda (row)
-			(apply #'query-parish row))
-		      (rows-as-lists start end))
-	      ",")))
+  (concat
+   "IDs Assigned: "
+   (mapconcat #'prin1-to-string 
+	      (json-to-lists
+	       (car (http-post-simple (concat *server-base-url* "insert-parishes")
+				      `((parishes . ,(buffer-substring-no-properties start end))))))
+	      ", ")))
+   
 
 (defun submit-schedule (start end)
   "Submit region as schedules"
   (http-post-simple (concat *server-base-url* "insert-schedules")
-		    `((schedules . ,(buffer-substring start end)))))
+		    `((schedules . ,(buffer-substring-no-properties start end)))))
 
 (defun submit (start end)
   "Submits a number of rows to the database

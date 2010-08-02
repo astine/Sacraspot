@@ -11,7 +11,8 @@
 
 (defun insert-parish (fullname shortname country state city street street-number 
 		      zip phone email website latitude longitude diocese)
-  "Adds a parish entry with the provided fields into the 'parishes' table."
+  "Adds a parish entry with the provided fields into the 'parishes' table. 
+   Returns the ID assigned to the parish on return."
   (let ((clean-phone (clean-phone phone)))
 					;validate info
     (unless (or (null email)
@@ -36,12 +37,16 @@
 			   'website website
 			   'latitude latitude
 			   'longitude longitude
-			   'diocese diocese))))
+			   'diocese diocese))
+    (find-parish-id fullname shortname country state city street street-number
+		    zip clean-phone email website latitude longitude diocese)))
+
 
 (define-easy-handler (insert-parishes :uri "/insert-parishes" :default-request-type :post) ()
-  "Handles calls to insert-parishes; parses CSV and insert-parishes for each row"
+  "Handles calls to insert-parishes; parses CSV and insert-parishes for each row
+   Returns the IDs assigned to each new parish."
   (with-connection *connection-spec*
-    ;(write-to-string (length (delete '("") (fetch-parameter "parishes" nil #'parse-csv) :test #'equal)))))
-    (dolist (parish (delete '("") (fetch-parameter "parishes" nil #'parse-csv) :test #'equal))
-      (apply #'insert-parish parish)))
-  "worked")
+    (with-output-to-string* ()
+      (with-array ()
+	(dolist (parish (delete '("") (fetch-parameter "parishes" nil #'parse-csv) :test #'equal))
+	  (encode-array-element (apply #'insert-parish parish)))))))

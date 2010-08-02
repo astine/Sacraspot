@@ -13,6 +13,12 @@
   "Removes last character from string"
   (substring string 0 (1- (length string))))
 
+(defun line-at-point ()
+  "Returns line at point stripping newlines and text properties"
+  (substring-no-properties
+   (chop
+    (thing-at-point 'line))))
+
 (defmacro* for-rows ((&optional (start (point-min)) (end (point-max))) &rest body)
   "Executes the body once for each row in the buffer with the
    point at the beginning of each row"
@@ -85,12 +91,13 @@
   "Returns rows bounded by start and end as lists of their fields"
   (let ((rows nil))
     (for-rows (start end)
-      (push (break-row-into-fields (chop (thing-at-point 'line))) rows))
+      (push (break-row-into-fields (line-at-point))
+	    rows))
     (nreverse rows)))
 
 (defun get-field-limits (field &optional row)
   "Returns the begin and end position in text of a field in its particular row"
-  (let ((fields (break-row-into-fields (or row (thing-at-point 'line)))))
+  (let ((fields (break-row-into-fields (or row (line-at-point)))))
     (when (>= field (length fields))
       (error "field index %i out of bounds for row: %s" field row))
     (let* ((start (apply #'+ (cons (* field 3) (mapcar #'length (butlast fields (- (length fields) field))))))
@@ -177,7 +184,7 @@
   (when print-message
     (remove-overlays (line-beginning-position) (line-end-position)))
   (unless (= (point) (point-max))
-    (let ((errors (validate-csv-row (chop (thing-at-point 'line)) *template*))
+    (let ((errors (validate-csv-row (line-at-point) *template*))
 	  (current-line (1- (count-lines 1 (1+ (point))))))
       (dolist (err errors)
 	(set-row err current-line)
