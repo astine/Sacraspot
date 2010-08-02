@@ -21,48 +21,40 @@
       (yason:with-array ()
 	(doquery (:order-by
 		  (:select 'schedule_id 'parish-id 'sacrament-type
-			   'start-time 'end-time 'language 'details 'day_of_month 'day_of_week 'month 'year
-			   :from 'full_schedules :where
+			   'start-time 'end-time 'language 'details 'years 'months 'days_of_month 'days_of_week
+			   :from 'schedules_full :where
 			   (:in 'schedule_id
 				(:select 'schedule_id :from 'full_schedules :where
 					 (:raw (sql-compile
+						(remove nil
 						`(:and
-						  ,(if parish-id `(:= parish_id ,parish-id) t)
-						  ,(if sacrament-type (cons ':or (mapcar (lambda (s-t)
+						  t
+						  ,(when parish-id `(:= parish_id ,parish-id))
+						  ,(when sacrament-type (cons ':or (mapcar (lambda (s-t)
 											   `(:= sacrament_type ,s-t))
-											 sacrament-type))
-						       t)
-						  ,(if start-time `(:= start_time ,start-time) t)
-						  ,(if end-time `(:= end_time ,end-time) t)
-						  ,(if language `(:= language ,language) t)
-						  ,(if details `(:= details ,details) t)
-						  ,(if dom `(:= day_of_month ,dom) t)
-						  ,(if dow `(:= day_of_week ,dow) t)
-						  ,(if month `(:= month ,month) t)
-						  ,(if year `(:= year ,year) t) ))))))
+											 sacrament-type)))
+						  ,(when start-time `(:= start_time ,start-time))
+						  ,(when end-time `(:= end_time ,end-time))
+						  ,(when language `(:= language ,language))
+						  ,(when details `(:= details ,details))
+						  ,(when dom `(:= day_of_month ,dom))
+						  ,(when dow `(:= day_of_week ,dow))
+						  ,(when month `(:= month ,month))
+						  ,(when year `(:= year ,year)))))))))
 		  'schedule_id)
-	    (schedule-id parish-id sacrament-type start-time end-time language details dom dow month year)
-	  (if (equal schedule-id (first prev-row))
-	      (progn (if (coalesce dom) (pushnew dom (eighth prev-row) :test #'equal))
-		     (if (coalesce dow) (pushnew dow (ninth prev-row) :test #'equal))
-		     (if (coalesce month) (pushnew month (tenth prev-row) :test #'equal))
-		     (if (coalesce year) (pushnew year (nth 10 prev-row) :test #'equal)))
-	      (progn (if prev-row
-			 (yason:with-object ()
-			   (yason:encode-object-element "PARISH-ID" (second prev-row))
-			   (yason:encode-object-element "SACRAMENT-TYPE" (third prev-row))
-			   (yason:encode-object-element "START-TIME" (format-hr-timestamp (fourth prev-row)))
-			   (yason:encode-object-element "END-TIME" (format-hr-timestamp (fifth prev-row)))
-			   (yason:encode-object-element "LANGUAGE" (sixth prev-row))
-			   (yason:encode-object-element "DETAILS" (seventh prev-row))
-			   (yason:encode-object-element "DOM" (eighth prev-row))
-			   (yason:encode-object-element "DOW" (ninth prev-row))
-			   (yason:encode-object-element "MONTH" (tenth prev-row))
-			   (yason:encode-object-element "YEAR" (nth 11 prev-row))))
-		     (setf prev-row 
-			   (mapcar #'coalesce
-				   (list schedule-id parish-id sacrament-type start-time end-time language details
-					 (to-list dom) (to-list dow) (to-list month) (to-list year)))))))))))
+	    (schedule-id parish-id sacrament-type start-time end-time language details years months doms dows)
+	  (yason:with-object ()
+	    (yason:encode-object-element "SCHEDULE-ID" schedule-id)
+	    (yason:encode-object-element "PARISH-ID" parish-id)
+	    (yason:encode-object-element "SACRAMENT-TYPE" sacrament-type)
+	    (yason:encode-object-element "START-TIME" (format-hr-timestamp start-time))
+	    (yason:encode-object-element "END-TIME" (format-hr-timestamp end-time))
+	    (yason:encode-object-element "LANGUAGE" language)
+	    (yason:encode-object-element "DETAILS" details)
+	    (yason:encode-object-element "YEARS" (coalesce years))
+	    (yason:encode-object-element "MONTHS" (coalesce months))
+	    (yason:encode-object-element "DOMS" (coalesce doms))
+	    (yason:encode-object-element "DOWS" (coalesce dows))))))))
 
 (define-easy-handler (select-schedules* :uri "/select-schedules" :default-request-type :post) ()
   "Handler for select-schedules passes the parameters to select-schedules"
