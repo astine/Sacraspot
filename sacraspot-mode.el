@@ -146,7 +146,6 @@
 			     (when latitude `(latitude . ,(prin1-to-string latitude)))
 			     (when longitude `(longitude . ,(prin1-to-string longitude)))
 			     (when diocese `(diocese . ,(prin1-to-string diocese)))))))))
-  ))
 
 (defun* select-parish (&rest args)
   "Queries the server for parishes and shows them in a separate buffer"
