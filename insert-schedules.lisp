@@ -72,7 +72,8 @@
     (dolist (dom doms)
       (execute (:insert-into 'schedule_dom_map :set 'day_of_month dom)))
     (dolist (dow (numbers-to-dows dows))
-      (execute (:insert-into 'schedule_dow_map :set 'day_of_week (string-downcase dow))))))
+      (execute (:insert-into 'schedule_dow_map :set 'day_of_week (string-downcase dow)))))
+  (find-schedule-id parish sacrament-type start-time end-time language details doms dows months years))
 
 
 (define-easy-handler (insert-schedules :uri "/insert-schedules" :default-request-type :post) ()

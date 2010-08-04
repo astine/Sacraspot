@@ -146,7 +146,6 @@
 			     (when latitude `(latitude . ,(prin1-to-string latitude)))
 			     (when longitude `(longitude . ,(prin1-to-string longitude)))
 			     (when diocese `(diocese . ,(prin1-to-string diocese)))))))))
-  ))
 
 (defun* select-parish (&rest args)
   "Queries the server for parishes and shows them in a separate buffer"
@@ -157,6 +156,37 @@
 (defun insert-select-parish (&rest args)
   "Queries the server for parishes and inserts them at the point"
   (interactive "MParish-ID: \nMFullname: \nMShortname: \nMCountry: \nMState: \nMCity: \nMStreet: \nMStreet-Number: \nMZip: \nMPhone: \nMEmail: \nMWebsite: \nMLatitude: \nMLongitude: \nMDiocese: ")
+  (insert (to-csv (apply #'query-parish args))))
+
+(defun* query-schedule (&optional schedule-id parish-id sacrament-type start-time end-time
+				  details language years months doms dows)
+  "Queries the server for schedules and returns them as a list of association lists."
+  (json-to-lists
+   (car
+    (http-post-simple (concat *server-base-url* "select-schedules")
+		      (delq nil
+			    (list
+			     (when parish-id `(parish-id . ,(prin1-to-string parish-id)))
+			     (when schedule-id `(schedule-id . ,(prin1-to-string schedule-id)))
+			     (when sacrament-type `(sacrament-type . ,(prin1-to-string sacrament-type)))
+			     (when start-time `(start-time . ,(prin1-to-string start-time)))
+			     (when end-time `(end-time . ,(prin1-to-string end-time)))
+			     (when details `(details . ,(prin1-to-string details)))
+			     (when language `(language . ,(prin1-to-string language)))
+			     (when years `(years . ,(prin1-to-string years)))
+			     (when months `(months . ,(prin1-to-string months)))
+			     (when doms `(doms . ,(prin1-to-string doms)))
+			     (when dows `(dows . ,(prin1-to-string dows)))))))))
+
+(defun* select-schedule (&rest args)
+  "Queries the server for schedules and shows them in a separate buffer"
+  (interactive "MSchedule-ID: \nMParish-ID: \nMSacrament-Type: \nMStart-Time: \nMEnd-Time: \nMDetails: \nMLanguage: \nMYears: \nMMonths: \nMDoms: \nMDows: ")
+  (with-output-to-temp-buffer "*schedules*"
+    (print (to-csv (apply #'query-parish args)))))
+ 
+(defun* insert-select-schedule (&rest args)
+  "Queries the server for schedules and inserts them at the point"
+  (interactive "MSchedule-ID: \nMParish-ID: \nMSacrament-Type: \nMStart-Time: \nMEnd-Time: \nMDetails: \nMLanguage: \nMYears: \nMMonths: \nMDoms: \nMDows: ")
   (insert (to-csv (apply #'query-parish args))))
 
 ;;; Submission
@@ -174,8 +204,13 @@
 
 (defun submit-schedule (start end)
   "Submit region as schedules"
-  (http-post-simple (concat *server-base-url* "insert-schedules")
-		    `((schedules . ,(buffer-substring-no-properties start end)))))
+  (concat
+   "IDs Assigned: "
+   (mapconcat #'prin1-to-string 
+	      (json-to-lists
+	       (car (http-post-simple (concat *server-base-url* "insert-schedules")
+				      `((schedules . ,(buffer-substring-no-properties start end))))))
+	      ", ")))
 
 (defun submit (start end)
   "Submits a number of rows to the database
