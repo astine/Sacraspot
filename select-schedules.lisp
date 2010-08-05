@@ -63,7 +63,7 @@
 			 language details years months doms dows)
   "Returns the ID of the schedule identified by the given fields, errs if more than one
    schedule is returned"
-  (let ((results (query (:raw (generate-schedules-query parish-id sacrament-type start-time end-time
+  (let ((results (query (:raw (generate-schedules-query nil parish-id sacrament-type start-time end-time
 							language details years months doms dows)))))
     (unless (= (list-length results) 1)
       (error "Returned too many results ~A" results))
