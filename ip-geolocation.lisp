@@ -8,15 +8,26 @@
 
 (defvar *geolocus-db-changed* nil)
 
+(define-condition geolocation-error (error)
+  ((ip :initarg :ip :reader ip)
+   (message :initarg :message :reader message))
+  (:report (lambda (condition stream)
+	     (format "~A~:[~:*~A~;~]"
+		     (message condition)
+		     (ip condition))))
+  (:documentation "Error signaling problem with ip geolocation"))
+
 (defun normalize-ip (ip-address)
   "Converts and ip address to a single integer"
   (declare (type string ip-address))
   (multiple-value-bind (whole-match fields)
       (scan-to-strings "([0-9]*)\.([0-9]*)\.([0-9]*)\.([0-9]*)" ip-address)
     (setq fields (map 'list #'read-from-string fields))
-    (unless (and (equal whole-match ip-address)
+    (assert (and (equal whole-match ip-address)
 		 (every (lambda (num) (<= 0 num 255)) fields))
-      (error "bad ip: ~a" ip-address))
+	    (ip)
+	    'geolocation-error :ip ip-address :message "IP out of range: ")
+      ;(error "bad ip: ~a" ip-address))
     (+ (* (elt fields 0) 16777216)
        (* (elt fields 1) 65536)
        (* (elt fields 2) 256)
@@ -36,10 +47,15 @@
 (defun latitude-and-longitude (ip-address)
   "Returns the latitude and longitude as stored for a given ip address"
   (declare (type string ip-address))
-  (aif (get-locale ip-address)
-    (list (getf it :latitude)
-	  (getf it :longitude))
-    (warn "No latitude or longitude found for ip ~A" ip-address)))
+  (restart-case
+      (aif (get-locale ip-address)
+	   (list (getf it :latitude)
+		 (getf it :longitude))
+	   (error 'geolocation-error :message "No latitude or longitude found for IP: ~A" :ip ip-address))
+    (return-nil () nil)
+    (try-other-ip (ip) (latitude-and-longitude ip))
+    (specify-lat-long (latitude longitude) (list latitude longitude))))
+    
 
 (define-easy-handler (latitude-and-longitude* :uri "/latitude-and-longitude" :default-request-type :post) ()
   "Returns the latitude and longitude as to clients in JSON format
@@ -47,7 +63,9 @@
    IP will be used."
   (with-connection *connection-spec*
     (destructuring-bind (latitude longitude)
-	(latitude-and-longitude (fetch-parameter "ip" (remote-addr*) nil))
+	(handler-bind ((geolocation-error (lambda (c)
+					    (invoke-restart 'return-nil))))
+	  (latitude-and-longitude (fetch-parameter "ip" :default (real-remote-addr) :ip nil)))
       (yason:with-output-to-string* ()
 	(yason:with-object ()
 	  (yason:encode-object-element "latitude" latitude)
