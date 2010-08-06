@@ -82,7 +82,7 @@
   (with-connection *connection-spec*
     (with-output-to-string* ()
       (with-array ()
-	(dolist (schedule (delete '("") (fetch-parameter "schedules" nil #'parse-csv) :test #'equal))
+	(dolist (schedule (delete '("") (fetch-parameter "schedules" :parser #'parse-csv) :test #'equal))
 	  (encode-array-element (apply #'insert-schedule schedule)))))))
       
 

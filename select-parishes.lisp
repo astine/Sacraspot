@@ -99,8 +99,18 @@
 (define-easy-handler (select-parishes* :uri "/select-parishes" :default-request-type :post) ()
   "Dispatches requests to select-parishes; calles select-parishes directly using parameters passed by the client"
   (with-connection *connection-spec*
-    (apply #'select-parishes 
-	   ;(write-to-string
-	   (mapcar #'fetch-parameter '("parish-id" "fullname" "shortname" "country" "state"
-				       "city" "street" "street-number" "zip" "phone" "email"
-				       "website" "latitude" "longitude" "diocese")))))
+    (select-parishes (fetch-parameter "parish-id" :typespec '(or integer null))
+		     (fetch-parameter "fullname" :typespec '(or string null))
+		     (fetch-parameter "shortname" :typespec '(or string null))
+		     (fetch-parameter "country" :typespec '(or string null))
+		     (fetch-parameter "state" :typespec '(or string null))
+		     (fetch-parameter "city" :typespec '(or string null))
+		     (fetch-parameter "street" :typespec '(or string null))
+		     (fetch-parameter "street-number" :typespec '(or integer null))
+		     (fetch-parameter "zip" :typespec '(or integer null))
+		     (fetch-parameter "phone" :typespec '(or string null))
+		     (fetch-parameter "email" :typespec '(or string null))
+		     (fetch-parameter "website" :typespec '(or string null))
+		     (fetch-parameter "latitude" :typespec '(or float null))
+		     (fetch-parameter "longitude" :typespec '(or float null))
+		     (fetch-parameter "diocese" :typespec '(or string null)))))

@@ -114,18 +114,41 @@
 ;;; Functions and macros dealing with sacraspot specific issues
 ;;;
 
-(defun fetch-parameter (parameter-name &optional default (parser (lambda (param)
-								   (unless (equal param "")
-								     (read-from-string param)))))
+(define-condition bad-input-error (error)
+  ((input :initarg :input :reader input)
+   (param :initarg :param :reader param)
+   (expected :initarg :expected :reader expected))
+  (:report (lambda (condition stream)
+	     (format stream "Bad input ~:[~;for ~:*~A~]: ~A, ~A expected." 
+		     (param condition)
+		     (input condition)
+		     (expected condition))))
+  (:documentation "Error signaled when invalid or incorrect input is provided to an server call"))
+
+(defun fetch-parameter (parameter-name &key default typespec
+			(parser (lambda (param)
+				  (unless (equal param "")
+				    (read-from-string param)))))
   "A function to encapsulate some of the routine details of dealing with http
    parameters in hunchentoot handlers."
   (declare (type string parameter-name)
 	   (type (or null function) parser))
-  (aif (parameter parameter-name)
-    (if parser
-	(funcall parser it)
-	it)
-    default))
+  (restart-case
+      (aif (parameter parameter-name)
+	(if parser
+	    (let ((input (funcall parser it)))
+	      (if typespec 
+		  (progn (assert (subtypep (type-of input) typespec)
+			  (input) 'bad-input-error
+			  :param parameter-name
+			  :input (write-to-string input)
+			  :expected typespec)
+			 input)
+		  input))
+	    it)
+	default)
+    (use-default () default)
+    (use-other-value (value) value)))
 		       
 (defun parse-number-span (span)
   "Take a string of the form '1-3, 5, 8-10', and returns an ordered
