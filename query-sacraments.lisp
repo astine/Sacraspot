@@ -14,6 +14,8 @@
 
 (defun generate-sacraments-query (time distance future maxresults sacraments language latitude longitude)
   "Returns the query used to pull lists of upcoming local sacraments"
+  (declare (type local-time:timestamp time) (type integer distance future maxresults)
+	   (type (or null string) language) (type list sacraments) (type float latitude longitude))
   (sql (:limit
 	(:order-by
 	 (:select 'fullname 'city 'state 'sacrament_type 'time 'details 'language 'latitude 'longitude
@@ -47,7 +49,7 @@
 (defun query-sacraments (time distance future maxresults sacraments language latitude longitude)
   "Returns a JSON string containing the results of query based on the constraints provided."
   (declare (type local-time:timestamp time) (type integer distance future maxresults)
-	   (type list sacraments) (type float latitude longitude))
+	   (type (or null string) language) (type list sacraments) (type float latitude longitude))
   (yason:with-output-to-string* ()
     (yason:with-array ()
       (doquery (:raw (generate-sacraments-query time distance future maxresults sacraments language latitude longitude))
@@ -68,7 +70,7 @@
 (defun query-sacraments-html (time distance future maxresults sacraments language latitude longitude)
   "Returns a HTML string containing the results of query based on the constraints provided."
   (declare (type local-time:timestamp time) (type integer distance future maxresults)
-	   (type list sacraments) (type float latitude longitude))
+	   (type (or null string) language) (type list sacraments) (type float latitude longitude))
   (with-html-output-to-string (*standard-output*)
     (:table :id "sacraments" :class "sacraments-table"
       (doquery (:raw (generate-sacraments-query time distance future maxresults sacraments language latitude longitude))
@@ -85,18 +87,18 @@
   "When run within a http callback, fetches and binds the parameters that are expected of
    a call to query-sacraments"
   (with-gensyms (lat-long)
-    `(let ((ip (fetch-parameter "ip" (real-remote-addr) nil))
-	   (time (fetch-parameter "time" (now) #'parse-timestring))
-	   (distance (fetch-parameter "distance" 25))
-	   (future (fetch-parameter "future" 453000))
-	   (maxresults (fetch-parameter "maxresults" 25))
-	   (sacraments (fetch-parameter "sacraments" '("Mass" "Confession") #'yason:parse))
+    `(let ((ip (fetch-parameter "ip" :default (real-remote-addr) :parser nil))
+	   (time (fetch-parameter "time" :default (now) :parser #'parse-timestring :typespec 'local-time:timestamp))
+	   (distance (fetch-parameter "distance" :default 25))
+	   (future (fetch-parameter "future" :default 453000))
+	   (maxresults (fetch-parameter "maxresults" :default 25))
+	   (sacraments (fetch-parameter "sacraments" :default '("Mass" "Confession") :parser #'yason:parse :typespec '(or list null)))
 	   (language (fetch-parameter "language")))
        (let* ((,lat-long (unless (and (parameter "latitude")
 				      (parameter "longitude"))
 			   (latitude-and-longitude ip)))
-	      (latitude (fetch-parameter "latitude" (first ,lat-long)))
-	      (longitude (fetch-parameter "longitude" (second ,lat-long))))
+	      (latitude (fetch-parameter "latitude" :default (first ,lat-long)))
+	      (longitude (fetch-parameter "longitude" :default (second ,lat-long))))
       ,@body))))
 
 (define-easy-handler (query-sacraments* :uri "/query-sacraments" :default-request-type :post) ()

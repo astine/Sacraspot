@@ -48,5 +48,5 @@
   (with-connection *connection-spec*
     (with-output-to-string* ()
       (with-array ()
-	(dolist (parish (delete '("") (fetch-parameter "parishes" nil #'parse-csv) :test #'equal))
+	(dolist (parish (delete '("") (fetch-parameter "parishes" :parser #'parse-csv) :test #'equal))
 	  (encode-array-element (apply #'insert-parish parish)))))))

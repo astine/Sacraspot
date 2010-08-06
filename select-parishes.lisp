@@ -22,6 +22,10 @@
 				country state city street street-number zip
 				phone email website
 				latitude longitude diocese)
+  (declare (type (or string null)
+		 fullname shortname country state city street phone email website diocese)
+	   (type (or integer null) parish-id street-number zip)
+	   (type (or float integer null) latitude longitude))
   "Generates a query for selecting parishes from the database"
   (sql (:select 'parish_id 'fullname 'shortname 'country 'state
 		'city 'street 'street_number 'zip 'phone 'email
@@ -31,6 +35,7 @@
 			      (remove nil
 				      `(:and
 					t
+					,(when parish-id `(:= parish_id ,parish-id))
 					,(when fullname `(:= fullname ,fullname))
 					,(when shortname `(:= shortname ,shortname))
 					,(when country `(:= country ,country))
@@ -53,32 +58,21 @@
   "Queries the database for parishes, returning a JSON list of hashes each representing a
    returned parish. Results can be filtered by specifying the value for a specific field;
    leave a field blank to allow for any value."
+  (declare (type (or string null)
+		 fullname shortname country state city street phone email website diocese)
+	   (type (or integer null) parish-id street-number zip)
+	   (type (or float integer null) latitude longitude))
   (macrolet ((make-objects (&body vars)
 	       `(yason:with-object ()
 		  ,@(mapcar (lambda (var)
 			      `(yason:encode-object-element (string (quote ,var)) ,var))
 			    vars))))
-	     ;(make-sqls (&body vars)
-	       ;`(list 'and ,@(mapcar (lambda (var)
-				       ;`(if ,var (list ':= ',var ,var) t))
-				     ;vars))))
     (yason:with-output-to-string* ()
       (yason:with-array ()
 	(doquery (:raw (generate-parishes-query parish-id fullname shortname
 						country state city street street-number zip
 						(when phone (clean-phone phone)) email website
 						latitude longitude diocese))
-	    ;(:select 'parish_id 'fullname 'shortname 'country 'state
-			  ;'city 'street 'street_number 'zip 'phone 'email
-			  ;'website 'latitude 'longitude 'diocese
-			  ;:from 'parishes :where
-			  ;(:raw (sql-compile
-				 ;`(:and
-				   ;,(make-sqls parish-id fullname shortname country
-					       ;state city street zip email website
-					       ;latitude longitude diocese)
-				   ;,(if street-number `(:= street_number ,street-number) t)
-				   ;,(if phone `(:= phone ,(clean-phone phone)) t)))))
 	    (parish-id fullname shortname country state city street street-number zip phone email website latitude longitude diocese)
 	  (when (standard-phone-number-p phone)
 	    (setf phone (pretty-print-phone phone)))
@@ -92,6 +86,10 @@
 		       zip phone email website latitude longitude diocese)
   "Returns the ID of the parish identified by the given fields, errs if more than one
    parish is returned"
+  (declare (type (or string null)
+		 fullname shortname country state city street phone email website diocese)
+	   (type (or integer null) street-number zip)
+	   (type (or float integer null) latitude longitude))
   (let ((results (query (:raw (generate-parishes-query nil fullname shortname country state city street street-number
 						       zip phone email website latitude longitude diocese)))))
     (unless (= (list-length results) 1)
@@ -101,8 +99,18 @@
 (define-easy-handler (select-parishes* :uri "/select-parishes" :default-request-type :post) ()
   "Dispatches requests to select-parishes; calles select-parishes directly using parameters passed by the client"
   (with-connection *connection-spec*
-    (apply #'select-parishes 
-	   ;(write-to-string
-	   (mapcar #'fetch-parameter '("parish-id" "fullname" "shortname" "country" "state"
-				       "city" "street" "street-number" "zip" "phone" "email"
-				       "website" "latitude" "longitude" "diocese")))))
+    (select-parishes (fetch-parameter "parish-id" :typespec '(or integer null))
+		     (fetch-parameter "fullname" :typespec '(or string null))
+		     (fetch-parameter "shortname" :typespec '(or string null))
+		     (fetch-parameter "country" :typespec '(or string null))
+		     (fetch-parameter "state" :typespec '(or string null))
+		     (fetch-parameter "city" :typespec '(or string null))
+		     (fetch-parameter "street" :typespec '(or string null))
+		     (fetch-parameter "street-number" :typespec '(or integer null))
+		     (fetch-parameter "zip" :typespec '(or integer null))
+		     (fetch-parameter "phone" :typespec '(or string null))
+		     (fetch-parameter "email" :typespec '(or string null))
+		     (fetch-parameter "website" :typespec '(or string null))
+		     (fetch-parameter "latitude" :typespec '(or float null))
+		     (fetch-parameter "longitude" :typespec '(or float null))
+		     (fetch-parameter "diocese" :typespec '(or string null)))))

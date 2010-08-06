@@ -38,4 +38,5 @@
   (typecase csv
     (string (parse-csv-stream (make-string-input-stream csv)))
     (stream (parse-csv-stream csv))
+    (null (error "Null CSV"))
     (t (error "Bad CSV: ~a, wrong type: ~a" csv (type-of csv)))))

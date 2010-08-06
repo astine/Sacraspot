@@ -47,7 +47,7 @@
   "Converts a list of numerical days of the week to the names of the days of the week"
   (numbers-to-listitem numbers *dows* "day-of-week"))
 
-(defun insert-schedule (parish sacrament-type start-time end-time details
+(defun insert-schedule (parish sacrament-type start-time end-time details language
 			years months doms dows)
   "Adds a schedule entry to the 'schedules table as well as entries to the 
    subordinate year, month, day-of-month, and day of week tables"
@@ -64,7 +64,8 @@
 			   'sacrament_type (string-capitalize sacrament-type)
 			   'start_time start-time
 			   'end_time end-time
-			   'details details))
+			   'details details
+			   'language language))
     (dolist (year years)
       (execute (:insert-into 'schedule_year_map :set 'year year)))
     (dolist (month (numbers-to-months months))
@@ -72,14 +73,16 @@
     (dolist (dom doms)
       (execute (:insert-into 'schedule_dom_map :set 'day_of_month dom)))
     (dolist (dow (numbers-to-dows dows))
-      (execute (:insert-into 'schedule_dow_map :set 'day_of_week (string-downcase dow))))))
+      (execute (:insert-into 'schedule_dow_map :set 'day_of_week (string-downcase dow)))))
+  (find-schedule-id parish sacrament-type start-time end-time language details doms dows months years))
 
 
 (define-easy-handler (insert-schedules :uri "/insert-schedules" :default-request-type :post) ()
   "Handles callses to insert-schedules; parses CSV and calls insert-schedules for each row"
-  (let ((schedules (fetch-parameter "schedules" nil #'parse-csv)))
-    (with-connection *connection-spec*
-      (dolist (schedule schedules)
-	(apply #'insert-schedule schedule)))))
+  (with-connection *connection-spec*
+    (with-output-to-string* ()
+      (with-array ()
+	(dolist (schedule (delete '("") (fetch-parameter "schedules" :parser #'parse-csv) :test #'equal))
+	  (encode-array-element (apply #'insert-schedule schedule)))))))
       
 
