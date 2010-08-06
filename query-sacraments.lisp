@@ -14,6 +14,8 @@
 
 (defun generate-sacraments-query (time distance future maxresults sacraments language latitude longitude)
   "Returns the query used to pull lists of upcoming local sacraments"
+  (declare (type local-time:timestamp time) (type integer distance future maxresults)
+	   (type (or null string) language) (type list sacraments) (type float latitude longitude))
   (sql (:limit
 	(:order-by
 	 (:select 'fullname 'city 'state 'sacrament_type 'time 'details 'language 'latitude 'longitude
@@ -47,7 +49,7 @@
 (defun query-sacraments (time distance future maxresults sacraments language latitude longitude)
   "Returns a JSON string containing the results of query based on the constraints provided."
   (declare (type local-time:timestamp time) (type integer distance future maxresults)
-	   (type list sacraments) (type float latitude longitude))
+	   (type (or null string) language) (type list sacraments) (type float latitude longitude))
   (yason:with-output-to-string* ()
     (yason:with-array ()
       (doquery (:raw (generate-sacraments-query time distance future maxresults sacraments language latitude longitude))
@@ -68,7 +70,7 @@
 (defun query-sacraments-html (time distance future maxresults sacraments language latitude longitude)
   "Returns a HTML string containing the results of query based on the constraints provided."
   (declare (type local-time:timestamp time) (type integer distance future maxresults)
-	   (type list sacraments) (type float latitude longitude))
+	   (type (or null string) language) (type list sacraments) (type float latitude longitude))
   (with-html-output-to-string (*standard-output*)
     (:table :id "sacraments" :class "sacraments-table"
       (doquery (:raw (generate-sacraments-query time distance future maxresults sacraments language latitude longitude))

@@ -119,7 +119,8 @@
 								     (read-from-string param)))))
   "A function to encapsulate some of the routine details of dealing with http
    parameters in hunchentoot handlers."
-  (declare (type string parameter-name))
+  (declare (type string parameter-name)
+	   (type (or null function) parser))
   (aif (parameter parameter-name)
     (if parser
 	(funcall parser it)
@@ -192,6 +193,7 @@
 
 (defun format-hr-timestamp (time)
   "Formats a timestamp to a string of the form: MM DD, YYYY HH:MM AM/PM"
+  (declare (type (or null local-time:timestamp) time))
   (when time
     (format-timestring nil time
 		       :format '(:short-month " " :day ", " :year " ":hour12 ":" (:min 2) " " :ampm))))

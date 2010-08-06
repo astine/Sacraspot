@@ -14,6 +14,10 @@
 ;year
 
 (defun generate-schedules-query (schedule-id parish-id sacrament-type start-time end-time language details years months doms dows)
+  (declare (type (or integer null) schedule-id parish-id)
+	   (type (or list null) sacrament-type years months doms dows)
+	   (type (or local-time:timestamp null) start-time end-time)
+	   (type (or string null) language details))
   (sql (:order-by
 	(:select 'schedule_id 'parish-id 'sacrament-type
 		 'start-time 'end-time 'language 'details 'years 'months 'days_of_month 'days_of_week
@@ -42,6 +46,10 @@
 (defun select-schedules (schedule-id parish-id sacrament-type start-time end-time language details years months doms dows)
   "Selects a set of schedules from the db according to the given filters, and returns the results
    encoded in a json string."
+  (declare (type (or integer null) schedule-id parish-id)
+	   (type (or list null) sacrament-type years months doms dows)
+	   (type (or local-time:timestamp null) start-time end-time)
+	   (type (or string null) language details))
   (yason:with-output-to-string* ()
     (yason:with-array ()
       (doquery (:raw (generate-schedules-query schedule-id parish-id sacrament-type start-time end-time language details years months doms dows))
@@ -61,6 +69,10 @@
 
 (defun find-schedule-id (parish-id sacrament-type start-time end-time
 			 language details years months doms dows)
+  (declare (type (or integer null) parish-id)
+	   (type (or list null) sacrament-type years months doms dows)
+	   (type (or local-time:timestamp null) start-time end-time)
+	   (type (or string null) language details))
   "Returns the ID of the schedule identified by the given fields, errs if more than one
    schedule is returned"
   (let ((results (query (:raw (generate-schedules-query nil parish-id (list sacrament-type)
