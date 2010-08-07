@@ -12,7 +12,7 @@
   ((ip :initarg :ip :reader ip)
    (message :initarg :message :reader message))
   (:report (lambda (condition stream)
-	     (format "~A~:[~:*~A~;~]"
+	     (format stream "~A~:[~;~:*~A~]"
 		     (message condition)
 		     (ip condition))))
   (:documentation "Error signaling problem with ip geolocation"))
