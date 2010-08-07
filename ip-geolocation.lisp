@@ -27,7 +27,6 @@
 		 (every (lambda (num) (<= 0 num 255)) fields))
 	    (ip)
 	    'geolocation-error :ip ip-address :message "IP out of range: ")
-      ;(error "bad ip: ~a" ip-address))
     (+ (* (elt fields 0) 16777216)
        (* (elt fields 1) 65536)
        (* (elt fields 2) 256)

@@ -88,8 +88,8 @@
    a call to query-sacraments"
   (with-gensyms (lat-long)
     `(handler-bind ((geolocation-error (lambda (c)
-					 (when (equal (real-remote-addr) (ip c))
-					   (invoke-restart 'try-other-ip (read-remote-addr)))))
+					 (unless (equal (real-remote-addr) (ip c))
+					   (invoke-restart 'try-other-ip (real-remote-addr)))))
 		    (bad-input-error (lambda (c)
 				       (unless *debug*
 					 (invoke-restart 'use-default)))))
