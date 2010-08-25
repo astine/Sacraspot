@@ -10,6 +10,7 @@
 	       (:file "csv")
 	       (:file "ip-geolocation")
                (:file "initialize")
+	       (:file "query-parishes")
 	       (:file "query-sacraments")
 	       (:file "select-parishes")
 	       (:file "select-schedules")
