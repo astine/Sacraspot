@@ -65,7 +65,7 @@
     (destructuring-bind (latitude longitude)
 	(handler-bind ((geolocation-error (lambda (c)
 					    (invoke-restart 'return-nil))))
-	  (latitude-and-longitude (fetch-parameter "ip" :default (real-remote-addr) :ip nil)))
+	  (latitude-and-longitude (fetch-parameter "ip" :default (real-remote-addr) :parser nil)))
       (yason:with-output-to-string* ()
 	(yason:with-object ()
 	  (yason:encode-object-element "latitude" latitude)
