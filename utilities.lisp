@@ -213,8 +213,7 @@
   (with-output-to-string (out)
     (with-input-from-string (in number)
       (awhile (read-char in nil nil)
-	(if (and (> (char-code it) 47) 
-		 (< (char-code it) 58))
+	(if (digit-p it) 
 	    (princ it out))))))
 					   
 (defun pretty-print-phone (number)
