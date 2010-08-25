@@ -137,19 +137,35 @@
       (aif (parameter parameter-name)
 	(if parser
 	    (let ((input (funcall parser it)))
-	      (if typespec 
-		  (progn (assert (subtypep (type-of input) typespec)
+	      (progn
+		(when typespec 
+		  (assert (subtypep (type-of input) typespec)
 			  (input) 'bad-input-error
 			  :param parameter-name
 			  :input (write-to-string input)
-			  :expected typespec)
-			 input)
-		  input))
+			  :expected typespec))
+		input)
 	    it)
 	default)
     (use-default () default)
     (use-other-value (value) value)))
-		       
+	
+(defmacro with-location (&body body)
+  "When called within the body of a handler, determines the location of the remote client
+   by first checking for explicit latitude and longitude parameters and secondly by checking the
+   ip against the geolocation database."
+  (with-gensyms (lat-long)
+    `(handler-bind ((geolocation-error (lambda (c)
+					 (when (equal (real-remote-addr) (ip c))
+					   (invoke-restart 'try-other-ip (read-remote-addr))))))
+       (let* ((ip (fetch-parameter "ip" :default (real-remote-addr) :parser nil :typespec 'string))
+	      (,lat-long (unless (and (parameter "latitude")
+				      (parameter "longitude"))
+			   (latitude-and-longitude ip)))
+	      (latitude (fetch-parameter "latitude" :default (first ,lat-long) :typespec 'float))
+	      (longitude (fetch-parameter "longitude" :default (second ,lat-long) :typespec 'float)))
+	 ,@body))))	       
+
 (defun parse-number-span (span)
   "Take a string of the form '1-3, 5, 8-10', and returns an ordered
    list of every number, represented by the string"
