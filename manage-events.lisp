@@ -1,35 +1,12 @@
-#! /usr/bin/sbcl --core ~/serv --script
+;;; website manage-events.lisp - Andrew Stine (C) 2009-2010
 
-(print *posix-argv*)
+(in-package #:sacraspot)
 
-(use-package 'postmodern)
-(use-package 'local-time)
-
-;; log action
-(with-open-file (log "/var/log/sacraspot" :direction :output :if-exists :append)
-  (format log "~A - ~A:~T~A" (sacraspot::format-hr-timestamp (now)) "manage-events" (second *posix-argv*)))
-
-(defmacro while (condition &body body)
-  `(do () ((not ,condition)) ,@body))
-
-(defun reload-settings (file-path)
-  (with-open-file (settings file-path)
-    (while (listen settings)
-      (let ((setting (read settings)))
-	(eval `(defparameter ,(first setting) ,(rest setting)))))))
-
-;;load all of the settings
-(reload-settings "settings.sexp")
-
-;; database
-(defvar *connection-spec* `(,*db-name* ,*db-user* ,*db-passwd* ,*db-host* :pooled-p t))
-
-;(connect *db-name* *db-user* *db-passwd* *db-host* :pooled-p t)
-
-(defvar *headway* 1)
-(setf *default-timezone* +utc-zone+)
+(defvar *headway* 1
+  "The number of days into the future to prepare events to query against")
 
 (defun add-events (date)
+  "Populates the events table with a list of events for 'date' based on the schedules table."
   (let* ((date-string (concatenate 'string (cl-postgres:to-sql-string date) "::date"))
 	 (mon-to-char (concatenate 'string "TO_CHAR(" date-string ",E'Mon')"))
 	 (dow-to-char (concatenate 'string "TO_CHAR(" date-string ",E'dy')")))
@@ -48,26 +25,29 @@
 							:where (:= (:+ (:raw date-string) 'start-time) 'time))))))))))
 
 (defun clear-events (date)
+  "Empties the events table"
   (execute (:delete-from 'events
 			 :where (:< 'time (:type date :date)))))
 
 (defun refresh-events (date)
+  "Completely repopulates the events table from scratch"
   (execute (:delete-from 'events))
   (dotimes (offset (1+ *headway*))
     (add-events (timestamp+ date offset :day))))
 
 (defun update-events (date)
+  "Removes old events from the events table and adds new ones"
   (add-events (timestamp+ date *headway* :day))	
   (clear-events date))
 
-(with-connection *connection-spec*
-  (cond ((equal (second *posix-argv*) "refresh")
-	 (refresh-events (now)))
-	((equal (second *posix-argv*) "update")
-	 (update-events (now)))))
+(defvar *update-or-refresh* :update
+  "Specifies whether the repeating task to manage events fully refreshed the events table or merely updates it")
 
-;; log completion
-(with-open-file (log "/var/log/sacraspot" :direction :output :if-exists :append)
-  (format log " - Done~%"))
+(defun manage-events ()
+  "The repeating scheduler job for the events table"
+  (with-connection *connection-spec*
+    (case *update-or-refresh*
+      (:refresh (refresh-events (now)))
+      (:update (update-events (now))))))
 
-(quit)
+(add-cron-job 'manage-events :minute 0 :hour 0)

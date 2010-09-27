@@ -10,6 +10,7 @@
 	       (:file "csv")
 	       (:file "ip-geolocation")
                (:file "initialize")
+	       (:file "manage-events")
 	       (:file "query-parishes")
 	       (:file "query-sacraments")
 	       (:file "select-parishes")
@@ -31,4 +32,5 @@
                :cl-ppcre
 	       :fiveam
 	       :postmodern
-	       :yason))
+	       :yason
+	       :cl-cron))

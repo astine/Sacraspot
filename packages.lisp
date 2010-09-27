@@ -16,6 +16,7 @@
 	#:postmodern    ;Database access layer
 	#:yason         ;JSON parser/generator
 	#:html-template ;html-templating engine
+	#:cl-cron       ;scheduler
 	)
   (:export #:alist-to-plist 
 	   #:with-gensyms 
@@ -65,6 +66,14 @@
 	   #:numbers-to-listitem
 	   #:numbers-to-months
 	   #:numbers-to-dows
+	   
+	   #:*headway*
+	   #:*update-or-refresh*
+	   #:add-events
+	   #:clear-events
+	   #:refresh-events
+	   #:update-events
+	   #:manage-events
 	   ))
 
 
