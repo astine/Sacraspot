@@ -144,7 +144,7 @@
 			  :param parameter-name
 			  :input (write-to-string input)
 			  :expected typespec))
-		input)
+		input))
 	    it)
 	default)
     (use-default () default)
