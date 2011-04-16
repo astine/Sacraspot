@@ -110,6 +110,27 @@
   "Wraps an item in a list, unless the item is :null or nil, in which case, return the empty list"
   (and (coalesce item) (list item)))
 
+;;; patch hunchentoot to allow for prefix URIs
+
+(in-package #:hunchentoot)
+
+(defvar *root-uri* nil)
+(export '*root-uri*)
+
+(defun dispatch-easy-handlers (request)
+  "This is a dispatcher which returns the appropriate handler
+  defined with DEFINE-EASY-HANDLER, if there is one."
+  ;(lambda (&key) (format nil ":~A:~A:"  *root-uri* (script-name* *request*))))
+  (loop for (uri acceptor-names easy-handler) in *easy-handler-alist*
+     when (and (or (eq acceptor-names t)
+                   (find (acceptor-name *acceptor*) acceptor-names :test #'eq))
+               (cond ((stringp uri)
+                      (string= (script-name request) (concatenate 'string *root-uri* uri)))
+                     (t (funcall uri request))))
+       do (return easy-handler)))
+
+(in-package #:sacraspot)
+
 ;;;
 ;;; Functions and macros dealing with sacraspot specific issues
 ;;;

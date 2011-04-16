@@ -1,3 +1,5 @@
+(in-package #:sacraspot)
+
 (defun generate-query-parishes-query (latitude longitude distance maxresults)
   " Generates a query for selecting parishes by location and distance."
   (declare (type float latitude longitude) (type integer distance maxresults))

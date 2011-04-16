@@ -11,7 +11,7 @@
     (let ((outform nil))
       (while (listen settings)
 	(let ((setting (read settings)))
-	  (push `(defvar ,(first setting) ,(rest setting)) outform)))
+	  (push `(defparameter ,(first setting) ,(rest setting)) outform)))
       `(progn ,@outform))))
 
 (defun reload-settings (file-path)

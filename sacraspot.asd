@@ -18,9 +18,9 @@
 	       (:file "insert-parishes")
 	       (:file "insert-schedules")
 	       (:file "tests")
-	       (:file "frontpage")
-               (:file "admin")
-               (:file "bulk"))
+	       (:file "frontpage"))
+               ;(:file "admin")
+               ;(:file "bulk"))
   :depends-on (:asdf-system-connections
 	       :hunchentoot
 	       :drakma

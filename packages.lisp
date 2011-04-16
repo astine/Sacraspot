@@ -3,16 +3,17 @@
 (cl:in-package #:cl-user)
 
 (defpackage #:sacraspot
-  (:shadowing-import-from #:js #:! #:true #:false)
+  ;(:shadowing-import-from #:js #:!)
+  (:shadowing-import-from #:cl-who #:escape-string #:*escape-char-p* #:escape-string-minimal #:escape-string-minimal-plus-quotes #:escape-string-all)
+  (:shadowing-import-from #:cl #:+ #:- #:++ #:>= #:<= #:< #:> #:= #:cons #:throw #:lambda)
   (:use #:cl 	        ;Common Lisp
 	#:cl-user       ;Lisp userland, included so I can work within the ss package
 	#:cl-ppcre      ;Regular Expressions
 	#:hunchentoot   ;Lisp webserver	
-	#:parenscript   ;Javascript generation language
+	;#:js            ;Javascript generation language
 ;	#:drakma        ;Lisp web client
 	#:cl-who        ;HTML generation library
 	#:local-time    ;For consistent date+time handling
-	#:js 	
 	#:postmodern    ;Database access layer
 	#:yason         ;JSON parser/generator
 	#:html-template ;html-templating engine
