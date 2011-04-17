@@ -19,8 +19,9 @@
 	       (:file "insert-schedules")
 	       (:file "tests")
 	       (:file "frontpage")
-               (:file "admin")
-               (:file "bulk"))
+               ;(:file "admin")
+               ;(:file "bulk"))
+	       )
   :depends-on (:asdf-system-connections
 	       :hunchentoot
 	       :drakma
@@ -33,4 +34,5 @@
 	       :fiveam
 	       :postmodern
 	       :yason
-	       :cl-cron))
+	       :cl-cron
+	       :log5))

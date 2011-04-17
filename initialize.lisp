@@ -47,30 +47,26 @@
 ;debugging
 (if *debug* (setq *show-lisp-errors-p* t))
 
-;; ajax callbacks
-
-; this stuff is for use with ht-ajax - probable that we don't really need it
-;(defparameter *ajax-handler-uri* "/ajax")
-
-;(defparameter *ajax-processor* (make-ajax-processor 
-				;:type :prototype
-				;:server-uri *ajax-handler-uri*
-				;:js-file-uris (namestring 
-					       ;(merge-pathnames *js-dir* "/prototype.js"))))
-
 ;;timezone
-
 (setf *default-timezone* +utc-zone+)
 (set-local-time-cl-postgres-readers)
 
 ;;scheduler
 (start-cron)
 
-;(with-input-from-string (stream "9300 Stonewall Road
-;Manassas, VA 20110-2594")
-	     ;(let ((st-add nil)
-		   ;(street nil))
-	       ;(if (between (char-code (peek-char nil stream)) 47 58)
-		   ;(progn (setq st-add (read stream))
-			  ;(setq street (read-line stream))))
-	       ;(list st-add street)))
+;;logging    ;;Possibly will add an extended logging engine, if needed
+;(defcategory maintenance-job)
+;(defcategory access)
+;
+;(defvar *log-file* (open "sacraspot.messages"
+			 ;:direction :output
+			 ;:if-exists :append
+			 ;:if-does-not-exist :create))
+;
+;(start-sender 'primary-logger
+	      ;(stream-sender :location *log-file*)
+	      ;:category-spec '(or mainenance-job access)
+	      ;:output-spec '(time category message context))
+
+(defun shutdown ()
+  (close *log-file*))

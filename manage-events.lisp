@@ -48,6 +48,7 @@
   (with-connection *connection-spec*
     (case *update-or-refresh*
       (:refresh (refresh-events (now)))
-      (:update (update-events (now))))))
+      (:update (update-events (now)))))
+  (log-message 'info "~A called to manage events." *update-or-refresh*))
 
 (add-cron-job 'manage-events :minute 0 :hour 0)

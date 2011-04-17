@@ -17,6 +17,7 @@
 	#:yason         ;JSON parser/generator
 	#:html-template ;html-templating engine
 	#:cl-cron       ;scheduler
+	#:log5          ;logging utility
 	)
   (:export #:alist-to-plist 
 	   #:with-gensyms 
