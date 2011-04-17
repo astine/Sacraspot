@@ -261,20 +261,3 @@
 (defmethod yason:encode ((object float) &optional (stream *standard-output*))
   (format stream "~F" object))
 
-;;scheduler
-(defun add-cron-job (function-symbol &key minute step-min hour step-hour day-of-month step-dom month step-month day-of-week step-dow boot-only)
-  ""
-  (let ((job-id (make-cron-job function-symbol
-			       :minute minute
-			       :step-min step-min
-			       :hour hour
-			       :step-hour step-hour
-			       :day-of-month day-of-month
-			       :step-dom step-dom
-			       :month month
-			       :step-month step-month
-			       :day-of-week day-of-week
-			       :step-dow step-dom
-			       :boot-only boot-only)))
-    (restart-cron)
-    job-id))

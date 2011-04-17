@@ -51,4 +51,4 @@
       (:update (update-events (now)))))
   (log-message 'info "~A called to manage events." *update-or-refresh*))
 
-(add-cron-job 'manage-events :minute 0 :hour 0)
+(make-cron-job 'manage-events :minute 0 :hour 0)
