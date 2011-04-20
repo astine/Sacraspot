@@ -18,7 +18,7 @@
 	   (type (or null string) language) (type list sacraments) (type float latitude longitude))
   (sql (:limit
 	(:order-by
-	 (:select 'fullname 'city 'state 'sacrament_type 'time 'details 'language 'latitude 'longitude
+	 (:select 'events.parish_id 'fullname 'city 'state 'sacrament_type 'time 'details 'language 'latitude 'longitude
 		  (:as (:ll_distance 'latitude latitude 
 				     'longitude longitude) 
 		       'distance)
@@ -53,8 +53,9 @@
   (yason:with-output-to-string* ()
     (yason:with-array ()
       (doquery (:raw (generate-sacraments-query time distance future maxresults sacraments language latitude longitude))
-	  (fullname city state kind time details language latitude longitude distance weight)
+	  (parish-id fullname city state kind time details language latitude longitude distance weight)
 	(yason:with-object ()
+	  (yason:encode-object-element "parish-id" parish-id)
 	  (yason:encode-object-element "fullname" fullname)
 	  (yason:encode-object-element "city" city)
 	  (yason:encode-object-element "state" state)
@@ -74,7 +75,7 @@
   (with-html-output-to-string (*standard-output*)
     (:table :id "sacraments" :class "sacraments-table"
       (doquery (:raw (generate-sacraments-query time distance future maxresults sacraments language latitude longitude))
-	  (fullname city state kind time details language latitude longitude distance weight)
+	  (parish_id fullname city state kind time details language latitude longitude distance weight)
 	(htm (:tr
 	       (:td (str kind))
 	       (:td (str fullname))
