@@ -80,9 +80,13 @@
 (define-easy-handler (insert-schedules :uri "/insert-schedules" :default-request-type :post) ()
   "Handles callses to insert-schedules; parses CSV and calls insert-schedules for each row"
   (with-connection *connection-spec*
-    (with-output-to-string* ()
-      (with-array ()
-	(dolist (schedule (delete '("") (fetch-parameter "schedules" :parser #'parse-csv) :test #'equal))
-	  (encode-array-element (apply #'insert-schedule schedule)))))))
+    (let ((account-id (fetch-parameter "id" :typespec 'integer))
+	  (password (fetch-parameter "password" :typespec 'string))
+	  (ip (real-remote-addr)))
+      (authenticate (account-id password ip) 
+        (with-output-to-string* ()
+          (with-array ()
+	    (dolist (schedule (delete '("") (fetch-parameter "schedules" :parser #'parse-csv) :test #'equal))
+	      (encode-array-element (apply #'insert-schedule schedule)))))))))
       
 

@@ -46,7 +46,11 @@
   "Handles calls to insert-parishes; parses CSV and insert-parishes for each row
    Returns the IDs assigned to each new parish."
   (with-connection *connection-spec*
-    (with-output-to-string* ()
-      (with-array ()
-	(dolist (parish (delete '("") (fetch-parameter "parishes" :parser #'parse-csv) :test #'equal))
-	  (encode-array-element (apply #'insert-parish parish)))))))
+    (let ((account-id (fetch-parameter "id" :typespec 'integer))
+	  (password (fetch-parameter "password" :typespec 'string))
+	  (ip (real-remote-addr)))
+      (authenticate (account-id password ip) 
+        (with-output-to-string* ()
+          (with-array ()
+	    (dolist (parish (delete '("") (fetch-parameter "parishes" :parser #'parse-csv) :test #'equal))
+	      (encode-array-element (apply #'insert-parish parish)))))))))

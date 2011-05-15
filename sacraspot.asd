@@ -11,6 +11,7 @@
 	       (:file "ip-geolocation")
                (:file "initialize")
 	       (:file "manage-events")
+	       (:file "authentication")
 	       (:file "query-parishes")
 	       (:file "query-sacraments")
 	       (:file "select-parishes")
@@ -22,6 +23,7 @@
                ;(:file "admin")
                ;(:file "bulk"))
   :depends-on (:asdf-system-connections
+	       :ironclad
 	       :hunchentoot
 	       :drakma
                :parenscript

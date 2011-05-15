@@ -178,7 +178,7 @@
   (with-gensyms (lat-long)
     `(handler-bind ((geolocation-error (lambda (c)
 					 (when (equal (real-remote-addr) (ip c))
-					   (invoke-restart 'try-other-ip (read-remote-addr))))))
+					   (invoke-restart 'try-other-ip (real-remote-addr))))))
        (let* ((ip (fetch-parameter "ip" :default (real-remote-addr) :parser nil :typespec 'string))
 	      (,lat-long (unless (and (parameter "latitude")
 				      (parameter "longitude"))
