@@ -12,7 +12,7 @@
 ;maxresults - maximum number of results returned, defaults to 25
 ;sacraments - json list of sacraments to search for, defaults to mass and confession
 
-(defun generate-sacraments-query (time distance future maxresults sacraments language latitude longitude)
+(defun generate-sacraments-query (parish-id time distance future maxresults sacraments language latitude longitude)
   "Returns the query used to pull lists of upcoming local sacraments"
   (declare (type local-time:timestamp time) (type integer distance future maxresults)
 	   (type (or null string) language) (type list sacraments) (type float latitude longitude))
@@ -41,18 +41,19 @@
 						    `(:= 'sacrament_type ,sacrament))
 						  sacraments))))
 			       (:raw (sql-compile (if language `(:= 'language ,language) t)))
+			       (:raw (sql-compile (if parish-id `(:= 'events.parish_id ,parish-id) t)))
 			       (:> 'time time)
 			       (:< 'time (timestamp+ time future :sec))))
 	 'weight)
 	maxresults)))
 
-(defun query-sacraments (time distance future maxresults sacraments language latitude longitude)
+(defun query-sacraments (parish-id time distance future maxresults sacraments language latitude longitude)
   "Returns a JSON string containing the results of query based on the constraints provided."
   (declare (type local-time:timestamp time) (type integer distance future maxresults)
 	   (type (or null string) language) (type list sacraments) (type float latitude longitude))
   (yason:with-output-to-string* ()
     (yason:with-array ()
-      (doquery (:raw (generate-sacraments-query time distance future maxresults sacraments language latitude longitude))
+      (doquery (:raw (generate-sacraments-query parish-id time distance future maxresults sacraments language latitude longitude))
 	  (parish-id schedule-id fullname city state kind time details language latitude longitude distance weight)
 	(yason:with-object ()
 	  (yason:encode-object-element "parish_id" parish-id)
@@ -69,13 +70,13 @@
 	  (yason:encode-object-element "distance" distance)
 	  (yason:encode-object-element "weight"  weight))))))
 
-(defun query-sacraments-html (time distance future maxresults sacraments language latitude longitude)
+(defun query-sacraments-html (parish-id time distance future maxresults sacraments language latitude longitude)
   "Returns a HTML string containing the results of query based on the constraints provided."
   (declare (type local-time:timestamp time) (type integer distance future maxresults)
 	   (type (or null string) language) (type list sacraments) (type float latitude longitude))
   (with-html-output-to-string (*standard-output*)
     (:table :id "sacraments" :class "sacraments-table"
-      (doquery (:raw (generate-sacraments-query time distance future maxresults sacraments language latitude longitude))
+      (doquery (:raw (generate-sacraments-query parish-id time distance future maxresults sacraments language latitude longitude))
 	  (parish-id schedule-id fullname city state kind time details language latitude longitude distance weight)
 	(htm (:tr
 	       (:td (str kind))
@@ -91,7 +92,8 @@
     `(handler-bind ((bad-input-error (lambda (c)
 				       (unless *debug*
 					 (invoke-restart 'use-default)))))
-       (let ((time (fetch-parameter "time" :default (now) :parser #'parse-timestring :typespec 'local-time:timestamp))
+       (let ((parish-id (fetch-parameter "parish_id" :typespec '(or integer null)))
+	     (time (fetch-parameter "time" :default (now) :parser #'parse-timestring :typespec 'local-time:timestamp))
 	     (distance (fetch-parameter "distance" :default 25 :typespec 'integer))
 	     (future (fetch-parameter "future" :default 453000 :typespec 'integer))
 	     (maxresults (fetch-parameter "maxresults" :default 25 :typespec 'integer))
@@ -104,7 +106,7 @@
   "Handles calls to query-sacraments"
   (with-connection *connection-spec*
     (with-sacraments-query-parameters
-      (query-sacraments time distance future maxresults sacraments language latitude longitude))))
+      (query-sacraments parish-id time distance future maxresults sacraments language latitude longitude))))
 
 (define-easy-handler (query-sacraments-html* :uri "/query-sacraments-html" :default-request-type :post) ()
   "Handles calls to query-sacraments-html"
@@ -113,5 +115,5 @@
       (let ((*string-modifier* #'identity))
 	(with-output-to-string (*standard-output*)
 	  (fill-and-print-template (pathname "/var/www/localhost/htdocs/www/fallback-frontpage.html")
-				   `(:sacraments ,(query-sacraments-html time distance future maxresults sacraments language latitude longitude))
+				   `(:sacraments ,(query-sacraments-html parish-id time distance future maxresults sacraments language latitude longitude))
 				   :stream *standard-output*))))))

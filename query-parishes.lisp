@@ -1,6 +1,6 @@
 (in-package #:sacraspot)
 
-(defun generate-query-parishes-query (latitude longitude distance maxresults)
+(defun generate-query-parishes-query (parish-id latitude longitude distance maxresults)
   " Generates a query for selecting parishes by location and distance."
   (declare (type float latitude longitude) (type integer distance maxresults))
   (sql (:limit
@@ -11,12 +11,13 @@
 				       'longitude longitude)
 			 'distance)
 		 :from 'parishes
-		 :where (:< (:ll_distance 'latitude latitude 
-					  'longitude longitude)
-			    distance))
+		 :where (:and (:< (:ll_distance 'latitude latitude 
+					       'longitude longitude)
+				 distance)
+			      (:raw (sql-compile (if parish-id `(:= parish_id ,parish-id) t)))))
 	maxresults)))
 
-(defun query-parishes (latitude longitude distance maxresults)
+(defun query-parishes (parish-id latitude longitude distance maxresults)
   "Queries for parishes by location and distance."
   (declare (type float latitude longitude) (type integer distance maxresults))
   (macrolet ((make-objects (&body vars)
@@ -26,7 +27,7 @@
 			    vars))))
     (yason:with-output-to-string* ()
       (yason:with-array ()
-	(doquery (:raw (generate-query-parishes-query latitude longitude distance maxresults))
+	(doquery (:raw (generate-query-parishes-query parish-id latitude longitude distance maxresults))
 	    (parish-id fullname shortname country state city street street-number zip phone email website latitude longitude diocese distance)
 	  (when (standard-phone-number-p phone)
 	    (setf phone (pretty-print-phone phone)))
@@ -42,6 +43,7 @@
   "Dispatches requests to query-parishes; calles query-parishes directly using parameters passed by the client"
   (with-connection *connection-spec*
     (with-location
-      (query-parishes latitude longitude 
+      (query-parishes (fetch-parameter "parish_id" :typespec '(or integer null))
+		      latitude longitude 
 		      (fetch-parameter "distance" :typespec 'integer :default 25)
 		      (fetch-parameter "maxresults" :typespec 'integer :default 25)))))
