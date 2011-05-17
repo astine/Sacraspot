@@ -85,12 +85,12 @@
 (define-easy-handler (select-schedules* :uri "/select-schedules" :default-request-type :post) ()
   "Handler for select-schedules passes the parameters to select-schedules"
   (with-connection *connection-spec*
-    (select-schedules (fetch-parameter "schedule-id" :typespec (or integer null))
-		      (fetch-parameter "parish-id" :typespec (or integer null))
+    (select-schedules (fetch-parameter "schedule_id" :typespec (or integer null))
+		      (fetch-parameter "parish_id" :typespec (or integer null))
 		      (mapcar #'string-capitalize
-			      (fetch-parameter "sacrament-type" :typespec (or list null)))
-		      (fetch-parameter "start-time" :typespec (or local-time:timestamp null))
-		      (fetch-parameter "end-time" :typespec (or local-time:timestamp null))
+			      (fetch-parameter "sacrament_type" :typespec (or list null)))
+		      (fetch-parameter "start_time" :typespec (or local-time:timestamp null))
+		      (fetch-parameter "end_time" :typespec (or local-time:timestamp null))
 		      (fetch-parameter "language" :typespec (or string null))
 		      (fetch-parameter "details" :typespec (or string null))
 		      (fetch-parameter "years" :typespec (or list null))

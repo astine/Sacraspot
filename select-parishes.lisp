@@ -99,7 +99,7 @@
 (define-easy-handler (select-parishes* :uri "/select-parishes" :default-request-type :post) ()
   "Dispatches requests to select-parishes; calles select-parishes directly using parameters passed by the client"
   (with-connection *connection-spec*
-    (select-parishes (fetch-parameter "parish-id" :typespec '(or integer null))
+    (select-parishes (fetch-parameter "parish_id" :typespec '(or integer null))
 		     (fetch-parameter "fullname" :typespec '(or string null))
 		     (fetch-parameter "shortname" :typespec '(or string null))
 		     (fetch-parameter "country" :typespec '(or string null))
