@@ -28,13 +28,13 @@
     (yason:with-output-to-string* ()
       (yason:with-array ()
 	(doquery (:raw (generate-query-parishes-query parish-id latitude longitude distance maxresults))
-	    (parish-id fullname shortname country state city street street-number zip phone email website latitude longitude diocese distance)
+	    (parish_id fullname shortname country state city street street_number zip phone email website latitude longitude diocese distance)
 	  (when (standard-phone-number-p phone)
 	    (setf phone (pretty-print-phone phone)))
 	  (setf latitude (write-to-string latitude))
 	  (setf longitude (write-to-string longitude))
-	  (make-objects parish-id fullname shortname country state
-			city street street-number zip phone email
+	  (make-objects parish_id fullname shortname country state
+			city street street_number zip phone email
 			website latitude longitude diocese
 			distance))))))
 
