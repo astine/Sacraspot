@@ -37,7 +37,7 @@
 
 (defun encrypt-password (password salt)
   "Hashes a password with a given salt"
-  (hash-function (concatenate 'simple-array salt
+  (hash-function (concatenate '(simple-array (unsigned-byte 8) (*)) salt
 			      (ascii-string-to-byte-array password))
 		 *current-time-factor*))
 
@@ -54,7 +54,7 @@
   (equal encrypted-password
 	 (encrypt-password password salt)))
 
-(defun create-account (name password &optional address phone email description)
+(defun create-account (name password &optional admin? address phone email description)
   "Creates a new account and inserts it into the database."
   ;;validate info
   (unless (or (null email)
@@ -74,21 +74,49 @@
 			   'password_salt password-salt
 			   'encrypted_password encrypted-password
 			   'name name
+			   'admin admin?
 			   'address address
-			   'phone (clean-phone phone)
+			   'phone (when phone (clean-phone phone))
 			   'email email
 			   'description description))))
 
-(defmacro authenticate ((account-id password ip) &rest body)
+(defun lock-account (account-id)
+  "Locks an account."
+  (declare (type integer account-id))
+  (execute (:update 'accounts :set 'locked? t
+		    :where (:= 'account_id account-id))))
+
+(defun unlock-account (account-id)
+  "Unlocks an account."
+  (declare (type integer account-id))
+  (execute (:update 'accounts :set 'locked? nil
+		    :where (:= 'account_id account-id))))
+
+(defun remove-account (account-id)
+  "Deletes an account."
+  (declare (type integer account-id))
+  (execute (:delete-from 'account :where (:= 'account_id account-id))))
+
+(defun admin? (account-id)
+  "Return true if account is an admin account."
+  (declare (type integer account-id))
+  (query (:select 'admin :from 'accounts :where (:= 'account_id account-id))
+	 :single!))
+
+(defmacro authenticate ((account-id password ip &key need-admin?) &rest body)
   "Wraps a body of code and only executes it if account-id and password can be authenticated."
   `(catch 'break-from-authentication
-     (destructuring-bind (encrypted-password password-salt locked? last-login-attempt-time last-login-attempt-ip failed-logins)
-	 (query (:select 'encrypted-password 'password-salt 'locked? 'last-login-attempt-time 'last-login-attempt-ip 'failed-logins
+     (destructuring-bind (encrypted-password password-salt admin? locked? last-login-attempt-time last-login-attempt-ip failed-logins)
+	 (query (:select 'encrypted-password 'password-salt 'admin 'locked 'last-login-attempt-time 'last-login-attempt-ip 'failed-logins
 			 :from 'accounts
 			 :where (:= 'account_id ,account-id))
 		:row)
+       ,(when need-admin?
+	  `(when (not admin?)
+	     (warn "Attempt to access admin feature from none-admin account")
+	     (throw 'break-from-authentication "Not Admin Account")))
        (when locked?
-	 (warn "Attempt to access locked account ~A from ip ~A" ,account-if ,ip)
+	 (warn "Attempt to access locked account ~A from ip ~A" ,account-id ,ip)
 	 (throw 'break-from-authentication "Account Locked"))
        (sleep (greater (1- (expt 1.5 failed-logins)) 30 #'<))
        (if (match-password ,password encrypted-password password-salt)
@@ -96,14 +124,47 @@
 		    (execute (:update 'accounts :set 'failed_logins 0 :where (:= 'account_id ,account-id))))
 		  (execute (:update 'accounts :set 'last_login_time (now) 'last_login_ip ,ip))
 		  (progn ,@body))
-	 (execute (:update 'accounts :set 
-			   'failed_logins (1+ failed-logins) 
-			   'last_login_attempt_time (now) 
-			   'last_login_attempt_ip ,ip
-			   :where (:= 'account_id ,account-id)))
-	 (warn "Failed authentication from: ~A using id: ~A and password: ~A"
-	       ,ip ,account-id ,password)
-	 "Failed login"))))
-			   
+	 (progn (execute (:update 'accounts :set 
+				  'failed_logins (1+ failed-logins) 
+				  'last_login_attempt_time (now) 
+				  'last_login_attempt_ip ,ip
+				  :where (:= 'account_id ,account-id)))
+		(warn "Failed authentication from: ~A using id: ~A and password: ~A"
+		      ,ip ,account-id ,password)
+		"Failed login")))))
+
+(defun has-permission? (account-id parish-id &rest permissions)
+  "Returns true if the given account has permission to the perform the specified operation
+   on the given parish/record"
+  (declare (type integer account-id parish-id))
+  (destructuring-bind (read write)
+      (query (:select 'read 'write :from 'permissions 
+		      :where (:and (:= 'account_id account-id) 
+				   (:or (:is-null 'parish_id)
+					(:= 'parish_id parish-id))))
+	     :row)
+    (let ((permissions (or permissions '(:read :write))))
+      (and (or (not (member :read permissions)) read)
+	   (or (not (member :write permissions)) write)))))
+  
+(defun grant-permission (account-id parish-id &rest permissions)
+  "Grant a permissions on a parish to an account."
+  (declare (type integer account-id)
+	   (type (or integer keyword) parish-id))
+  (let ((permissions (or permissions '(:read :write))))
+    (execute (:insert-into 'permissions :set
+			   'account_id account-id
+			   'parish_id (if (equal parish-id :all) :null parish-id) ;null is the universal matcher for parish id in this table
+			   'read (when (member :read permissions) t)
+			   'write (when (member :write permissions) t)))))
+
+(defun revoke-permission (account-id parish-id)
+  "Revoke a permission on a parish for an account."
+  (declare (type integer account-id)
+	   (type (or integer keyword) parish-id))
+  (execute (:delete-from 'permissions 
+			 :where (:and (:= 'account_id account-id)
+				      (:= 'parish_id (if (equal parish-id :all) :null parish-id))))))
+
 		  
 ;;;TODO figure out better return codes

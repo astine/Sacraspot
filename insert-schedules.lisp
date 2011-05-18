@@ -83,7 +83,7 @@
     (let ((account-id (fetch-parameter "id" :typespec 'integer))
 	  (password (fetch-parameter "password" :typespec 'string))
 	  (ip (real-remote-addr)))
-      (authenticate (account-id password ip) 
+      (authenticate (account-id password ip :need-admin? t) 
         (with-output-to-string* ()
           (with-array ()
 	    (dolist (schedule (delete '("") (fetch-parameter "schedules" :parser #'parse-csv) :test #'equal))
