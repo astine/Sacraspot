@@ -25,7 +25,7 @@
 	(eval `(setq ,(first setting) ,(rest setting)))))))
 
 ;;load all of the settings
-(load-settings "/home/illuminati/sacraspot/settings.sexp")
+(load-settings "/etc/sacraspot/settings.sexp")
 
 ;; database
 

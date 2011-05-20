@@ -1,0 +1,16 @@
+; -*-lisp-*-
+;;server settings
+(*home* . "/path/to/sacraspot/")
+(*domain* . "10.10.10.10")
+(*port* . 8080)
+(*debug* . t)
+(*root-uri* . "/sacraspot")
+
+;;database settings
+(*db-host* . "localhost")
+(*db-name* . "database")
+(*db-user* . "username")
+(*db-passwd* . "passowrd")
+
+;;javascript settings
+(*js-dir* . "/js/")
