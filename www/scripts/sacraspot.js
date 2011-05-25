@@ -23,7 +23,7 @@
     var paths = "/latitude-and-longitude" +
                 ";/query-parishes" +
                 ";/query-sacraments",
-    base_host = "www.beggersandbuskers.com/sacraspot",
+    base_host = "www.beggersandbuskers.com/sacraspot/api",
     protocol = window.location.protocol.indexOf("http") > -1 ?
                             window.location.protocol : "http:";
 
