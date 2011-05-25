@@ -12,32 +12,125 @@
 <h2>The Sacraments &mdash; Sorted By Distance and Time</h2>
 </div>
 <div id="main_body">
-    <form action="" name="search_sacraments" id="search_sacraments" method="post">
-        <div id="filters_1"><a href="#">Mass</a> &bull; <a href="#">Confession</a></div>
-        <div id="filters_2"><a href="#">Adoration</a> &bull; <a href="#">Devotions</a></div>
-        <ul>
-            <li><input type="text" id="Search" name="Search" value="Enter your location ..." /><input type="submit" name="Submit" id="Submit" value="Search" /></li>
-        </ul>
-    </form>
-    <div id="Results">
-        <div id="map_container"></div>
-        <div id="Directions"></div> 
-    </div>
+<form action="" name="search_sacraments" id="search_sacraments" method="post" data-bind="submit: search">
+<ul>
+<li><input type="text" id="Search" name="Search" value="" placeholder="Search by time, by parish, by sacrament ..." data-bind="value: search_string, valueUpdate: 'afterkeyup'" /><input type="submit" name="Submit" id="Submit" value="Search" /></li>
+</ul>
+<fieldset>
+<legend>&darr; Advanced &darr;</legend>
+<ul>
+<li>Show
+<label><input type="checkbox" name="sacraments" value="Mass" checked="checked"> Masses</label>
+<label><input type="checkbox" name="sacraments" value="Confessions" checked="checked"> Confessions</label></li>
+<li><label>Return the first <input type="number" value="30" name="maxresults" id="maxresults" data-bind="value: search_flags.maxresults"> sacraments</label> <label>that are within <input type="number" name="distance" value="20" id="distance" data-bind="value: search_flags.distance"> miles of my current location.</label></li>
+<li>They can start <label>anytime between <input type="datetime-local" name="time" id="time" value="" data-bind="value: search_flags.time"></label> <label>and <input type="datetime-local" name="future" id="future" value="" data-bind="value: search_flags.future"></label> and be in any of the following languages:
+<label><input type="checkbox" name="language" value="English" checked="checked"> English</label>
+<label><input type="checkbox" name="language" value="Spanish"> Spanish</label>
+<label><input type="checkbox" name="language" value="Vietnamese"> Vietnamese</label></li>
+</ul>
+</fieldset>
+</form>
+
+<div id="ResultList" class="clear" data-bind="visible: sacrament_list().length > 0">
+<ul data-bind="template: {name: 'sacramentList', foreach: sacrament_list}"></ul>
+</div>
+<div id="Results">
+<div id="map_container"></div>
+<div id="Directions"></div>
+</div>
 <div class="push"></div>
 </div>
 </div><!-- END WRAPPER -->
-<div id="main_footer" class="footer">
-All content &copy;2010 Andrew Stine and Sean Vieira.
+<div class="footer">
+<p>All content &copy;2011 Andrew Stine and Sean Vieira.</p>
+<p id="status_line"></p>
 </div>
 <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
 <script type="text/javascript" src="./scripts/jquery.js"></script>
+<script type="text/javascript" src="./scripts/jquery.tmpl.js"></script>
 <script type="text/javascript" src="./scripts/underscore.js"></script>
-<script type="text/javascript" src="./scripts/sacraspot.js"></script>
+<script type="text/javascript" src="./scripts/knockout-latest.js"></script>
+<script type="text/javascript" src="./scripts/sacraspot.sketch.js"></script>
+<script type="text/javascript" src="./scripts/page.scripts.js"></script>
 <script>
-    $(function() {
-        //$("#main_footer").prepend("<code>Status: Running.</code><br />");
-        sacraspot.init();
-    });
+$(function(){
+// Start with the search bar
+$("#Search").bind("focus blur", function() {
+	// Update the model when we tab or click away.
+	// (Auto-complete doesn't trigger key-up event.)
+	view_model.search_string(this.value);
+});
+
+// Add basic status:
+$("#status_line").ajaxStart(function(){$(this).text("Starting request ...");}).ajaxStop(function(){$(this).text("Request complete.");}).ajaxError(function(e){$(this).addClass("error").text("There has been an error: " + e)});
+
+// The get the geocoder
+var geocoder = new google.maps.Geocoder();
+
+var now = new Date();
+
+var search_model = {
+	search_string: ko.observable(""),
+	search_flags: {
+		sacraments: ko.observableArray(["Mass","Confessions"]),
+		maxresults: ko.observable(30),
+		distance: ko.observable(20),
+		time: ko.observable(now),
+		future: ko.observable(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, now.getHours())),
+		language: ko.observableArray(["English", "Spanish", "Vietnamese"])
+	},
+	search_address: ko.observable(""),
+	search: function() {
+			geocoder.geocode(
+				{address: this.search_address()},
+				function(results) {
+					if (results && results.length > 0) {
+						var address = results[0].geometry.location;
+					} else {
+						address = {lat: function(){}, lng: function(){}};
+					}
+					var final_search_terms = _.extend(
+												{latitude: address.lat(), longitude: address.lng()},
+												ko.toJS(search_model.search_flags) || {}
+												)
+					sacraspot.sacraments(final_search_terms);
+				})
+			return false;
+		}
+},
+results_model = {
+	sacrament_list: ko.observableArray([]),
+	active_sacrament: ko.observable(),
+	active_parish: ko.observable()
+};
+
+search_model.search_string.subscribe(function(updated_value) {
+	var search_data = parse_search_string(updated_value);
+	search_model.search_address(search_data.term);
+	//search_data.flags
+});
+
+// Update the default success funtion of sacraspot.sacraments to do something interesting.
+sacraspot.sacraments({"success": function(json_data) {
+	json_data = normalize_json(json_data);
+	results_model.sacrament_list(json_data || []);
+	}
+}, true);
+
+// And, we're off!
+ko.applyBindings(search_model, document.getElementById("search_sacraments"));
+ko.applyBindings(results_model, document.getElementById("ResultList"));
+search_model.search();
+});
+</script>
+<script type="text/html" id="sacramentList">
+<li class="clear"><div class="information"><a class="parish_name" data-bind="text: fullname, attr: {'data-parish_id':parish_id}"></a>
+<span class="location" data-bind="text: format([city, state], '{0}, {1}')"></span>
+<span class="sacrament_kind" data-bind="text: kind"></span>
+<span class="sacrament_time" data-bind="text: time"></span>
+<span class="more_information" data-bind="visible: latitude" title="More Information">&#187;</span>
+<p data-bind="text: details, visible: details"></p></div>
+</li>
 </script>
 </body>
 </html>
