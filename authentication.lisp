@@ -51,8 +51,8 @@
 
 (defun match-password (password encrypted-password salt)
   "Returns true if 'encrypted-password' is the hash of 'salt' + 'password'"
-  (equal encrypted-password
-	 (encrypt-password password salt)))
+  (equalp encrypted-password
+	  (encrypt-password password salt)))
 
 (defun create-account (name password &optional admin? address phone email description)
   "Creates a new account and inserts it into the database."
@@ -103,35 +103,57 @@
   (query (:select 'admin :from 'accounts :where (:= 'account_id account-id))
 	 :single!))
 
+(define-condition failed-authentication ()
+  ((ip :initarg :ip :reader ip)
+   (account-id :initarg :account-id :reader account-id)
+   (message :initarg :message :reader message))
+  (:report (lambda (condition stream)
+	     (format stream "Failed Authentication: ~A~%source ip:  ~A~%account id: ~A"
+		     (message condition)
+		     (ip condition)
+		     (account-id condition))))
+  (:documentation "Condition signalling a failed login attempt."))
+
+(define-condition nonexistant-account (failed-authentication) ())
+(define-condition locked-account (failed-authentication) ())
+(define-condition need-admin (failed-authentication) ())
+(define-condition wrong-password (failed-authentication) ())
+
 (defmacro authenticate ((account-id password ip &key need-admin?) &rest body)
   "Wraps a body of code and only executes it if account-id and password can be authenticated."
-  `(catch 'break-from-authentication
-     (destructuring-bind (encrypted-password password-salt admin? locked? last-login-attempt-time last-login-attempt-ip failed-logins)
-	 (query (:select 'encrypted-password 'password-salt 'admin 'locked 'last-login-attempt-time 'last-login-attempt-ip 'failed-logins
-			 :from 'accounts
-			 :where (:= 'account_id ,account-id))
-		:row)
-       ,(when need-admin?
-	  `(when (not admin?)
-	     (warn "Attempt to access admin feature from none-admin account")
-	     (throw 'break-from-authentication "Not Admin Account")))
-       (when locked?
-	 (warn "Attempt to access locked account ~A from ip ~A" ,account-id ,ip)
-	 (throw 'break-from-authentication "Account Locked"))
-       (sleep (greater (1- (expt 1.5 failed-logins)) 30 #'<))
-       (if (match-password ,password encrypted-password password-salt)
-	   (progn (unless (zerop failed-logins) 
-		    (execute (:update 'accounts :set 'failed_logins 0 :where (:= 'account_id ,account-id))))
-		  (execute (:update 'accounts :set 'last_login_time (now) 'last_login_ip ,ip))
-		  (progn ,@body))
-	 (progn (execute (:update 'accounts :set 
-				  'failed_logins (1+ failed-logins) 
-				  'last_login_attempt_time (now) 
-				  'last_login_attempt_ip ,ip
-				  :where (:= 'account_id ,account-id)))
-		(warn "Failed authentication from: ~A using id: ~A and password: ~A"
-		      ,ip ,account-id ,password)
-		"Failed login")))))
+  (with-gensyms (normalized-ip)
+    `(let ((,normalized-ip (normalize-ip ,ip)))
+       (handler-case
+	(unless ,account-id (error "Null account-id"))
+	(unless ,password (error "Null password"))
+	(unless ,ip (error "Null ip"))
+	(destructuring-bind (encrypted-password password-salt admin? locked? last-login-attempt-time last-login-attempt-ip failed-logins)
+	    (or (query (:select 'encrypted-password 'password-salt 'admin 'locked 'last-login-attempt-time 'last-login-attempt-ip 'failed-logins
+				:from 'accounts
+				:where (:= 'account_id ,account-id))
+		       :row)
+		(signal 'nonexistant-account :message "Account does not exist." :ip ,ip :account-id ,account-id))
+	  ,(when need-admin?
+	     `(when (not admin?)
+		(signal 'need-admin "Need admin for this login." :ip ,ip :account-id ,account-id)))
+	  (when locked?
+	    (signal 'locked-account "Account locked." :ip ,ip :account-id ,account-id))
+	  (sleep (greater (1- (expt 1.5 failed-logins)) 30 #'<))
+	  (if (match-password ,password encrypted-password password-salt)
+	      (progn (unless (zerop failed-logins) 
+		       (execute (:update 'accounts :set 'failed_logins 0 :where (:= 'account_id ,account-id))))
+		     (execute (:update 'accounts :set 'last_login_time (now) 'last_login_ip ,normalized-ip))
+		     (progn ,@body))
+	    (signal 'wrong-password "Password does not match." :ip ,ip :account-id ,account-id))))
+       (wrong-password (c)
+		       (execute (:update 'accounts :set 
+					 'failed_logins (1+ failed-logins) 
+					 'last_login_attempt_time (now) 
+					 'last_login_attempt_ip ,normalized-ip
+					 :where (:= 'account_id ,account-id)))
+		       (write-to-string c))
+       (failed-authentication (c)
+			      (error c)))))
 
 (defun has-permission? (account-id parish-id &rest permissions)
   "Returns true if the given account has permission to the perform the specified operation

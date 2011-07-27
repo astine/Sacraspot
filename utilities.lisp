@@ -110,6 +110,11 @@
   "Wraps an item in a list, unless the item is :null or nil, in which case, return the empty list"
   (and (coalesce item) (list item)))
 
+(defun greater (a b &optional (test #'>))
+  (if (funcall test a b)
+      a
+    b))
+
 ;;; patch hunchentoot to allow for prefix URIs
 
 (in-package #:hunchentoot)
