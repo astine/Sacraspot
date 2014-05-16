@@ -20,7 +20,7 @@ html, body {
     height: 3em;
 }
 
-/* Shared Styles */
+/* General Page Styles */
 a {
     color: #33C;
     text-decoration: none;
@@ -29,22 +29,6 @@ body {
     background-color: #FEFEFE;
     font-family: Arial, Helvetica, sans-serif;
     text-align: center;
-}
-form {
-    background-color: #33A;
-    border: 1px solid #CCC;
-    margin: 1em 1em;
-    padding: 0 0;
-}
-form, form ul {
-    border-radius: .7em;
-    -moz-border-radius: .7em;
-    -webkit-border-radius: .7em;
-}
-form ul {
-    border: 1px solid #FFF;
-    margin: .1em .1em;
-    padding: 1em 1em;
 }
 h1, h2, h3, h4, h5 {
     font-family: Georgia, "Times New Roman", serif;
@@ -64,24 +48,149 @@ input {
 input.active, input.button {
     color: #000;
 }
-label {
-    font-weight: bold;
-    padding-right: .3em;
-}
 li, ul {
     list-style: none;
-}
-#main_body {
-    margin: 0 auto;
-    width: 600px;
-}
-#main_header {
-    padding-top: 10%;
 }
 .clear {
     clear: both;
     float: none;
     width: inherit;
+}
+.clear:after {
+    clear: both;
+    content: " ";
+    float: none;
+}
+
+/* Main Page */
+#main_body {
+    margin: 0 auto;
+    width: 750px;
+}
+#main_header {
+    padding-top: 1em;
+}
+
+#search_sacraments {
+    border: 1px solid #CCC;
+    margin-top: 1em;
+    padding: 0 0;
+}
+#search_sacraments, #Submit {
+    background-color: #33A;
+}
+#search_sacraments {
+	-moz-border-radius: .7em .7em;
+	-webkit-border-radius: .7em .7em;
+	border-radius: .7em .7em;
+	border: 1px solid #FFF;
+    margin: .1em .1em;
+    padding: 1em 1em;
+}
+
+#search_sacraments fieldset {
+	border: 0 none #000;
+}
+#search_sacraments fieldset li {
+	margin-bottom: 1em;
+	text-align: left;
+}
+#search_sacraments fieldset label,
+#search_sacraments fieldset legend,
+#search_sacraments fieldset li,
+#search_sacraments fieldset input {
+	color: #DDF;
+}
+#search_sacraments fieldset input[type="number"],
+#search_sacraments fieldset input[type="datetime-local"] {
+	background-color: transparent;
+	border: 0 none #000;
+	border-bottom: 1px dashed #CCC;
+	display: inline;
+	margin: 0;
+	padding: 0;
+	text-align: center;
+	width: auto;
+}
+#search_sacraments fieldset input[type="number"] {
+	width: 3em;
+}
+#Search {
+    margin-right: -6.5em;
+    padding: .5em 7em .5em .2em;
+    width: 32em;
+}
+#Submit {
+    border: 0 none #000;
+    -moz-border-radius: .7em;
+    -webkit-border-radius: .7em;
+	border-radius: .7em;
+    -moz-box-shadow: 1px 2px 1px #777777;
+    -webkit-box-shadow: 1px 2px 1px #777777;
+	box-shadow: 1px 2px 1px #777777;
+    color: #FFF;
+    cursor: pointer;
+    font-weight: bold;
+    position: relative;
+}
+#Submit:active {
+    -moz-box-shadow: 0px 1px 0px #777777;
+    -webkit-box-shadow: 0px 1px 0px #777777;
+	box-shadow: 0px 1px 0px #777777;
+}
+
+/* Results Styling */
+#ResultList {
+    border: 1px solid #000;
+	left: 0;
+    min-height: 40px;
+	position: relative;
+	top: 0;
+	zoom: 1; /* Fix for potential bug in IE < 8 */
+}
+#ResultList ul {
+    padding: 0 0;
+}
+#ResultList ul li {
+    border-bottom: 2px solid #900;
+	left: 0;
+	margin-bottom: 1.5em;
+    min-height: 10px;
+    padding-bottom: .5em;
+	position: relative;
+	top: 0;
+	zoom: 1; /* Fix for potential bug in IE < 8 */
+}
+#ResultList ul li:first-child {
+    margin-top: 1em;
+}
+#ResultList ul li:last-child {
+    border-bottom: 0px none #000;
+    padding-bottom: 0;
+}
+
+#ResultList .information {
+    clear: left;
+}
+#ResultList .more_information {
+	bottom: 0;
+	cursor: pointer;
+	font-size: 3em;
+	position: absolute;
+	right: 0;
+}
+.parish_name {
+    cursor: pointer;
+    display: block;
+    font-weight: bold;
+}
+.sacrament_kind {
+    font-family: Georia, "Times New Roman", Times, serif;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+.sacrament_time {
+    font-family: monospace;
 }
 
 /* Map Page Styles */
@@ -93,7 +202,10 @@ li, ul {
     width: auto;
 }
 #map_container {
-    border: 5px double #333;
+    border-bottom: 5px double #333;
+    border-left: 5px double #555;
+    border-right: 5px double #555;
+    border-top: 0 none #000;
     height: 24em;
     text-align: left;
     width: auto;
@@ -103,77 +215,4 @@ li, ul {
     margin: 0;
     padding: 0;
     width: 700px;
-}
-#filters_1, #filters_2 {
-    color: #FFF;
-    display: none;
-    font-size: .8em;
-    font-weight: bold;
-    margin-top: 1.7em;
-}
-#filters_1 a, #filters_2 a {
-    color: #FFF;
-}
-#filters_1 {
-    float: left;
-    margin-left: .7em;
-}
-#filters_2 {
-    float: right;
-    margin-right: .7em;
-}
-
-/* Unused Styles */
-.body_column_a, .body_column_b, .column_sidebar {
-    margin: 0 5px;
-    padding: 0 0;
-    text-align: center;
-}
-.body_column_a a, .body_column_b a, .column_sidebar a {
-    background-color: #CCF;
-    border-bottom: 20px solid #CCF;
-    border-top: 20px solid #CCF;
-    color: #000;
-    display: block;
-    margin: 0 0 1px 0;
-    padding-left: 10px;
-    padding-right: 10px;
-    text-decoration: none;
-    width: auto;
-}
-.body_column_a a:hover, .body_column_b a:hover, .column_sidebar a:hover {
-    background-color: #EEF;
-    border-color: #EEF;
-    cursor: pointer;
-    text-decoration: inherit;
-}
-.info_add {
-    color: #777;
-    font-size: .9em;
-    font-weight: bold;
-}
-.info_key {
-    font-weight: bold;
-}
-input.button {
-    background-color: #CCF;
-    border: 1px solid #999;
-    color: #333;
-    font-size: .7em;
-    margin-right: 3px;
-    padding: 0 5px;
-}
-
-/* Front Page Styles */
-.body_column_a, .body_column_b {
-    border: 1px solid #000;
-    width: 288px;
-}
-.body_column_a {
-    clear: left;
-    float: left;
-}
-.body_column_b {
-    clear: right;
-    float: right;
 }
